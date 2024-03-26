@@ -45,7 +45,7 @@ if uploaded_file is not None:
 
         
     if 'df' not in st.session_state:
-            st.session_state.df = data
+        st.session_state.df = data.copy(deep=True)
 
     num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
     # num_category.append('count')
@@ -54,7 +54,7 @@ if uploaded_file is not None:
     
         
     if st.button("Reset Data"):
-            st.session_state.df = data
+        st.session_state.df = data.copy(deep=True)
     
     st.subheader("Original Dataset Preview")
     st.dataframe(data)
@@ -138,26 +138,26 @@ if uploaded_file is not None:
     if "Replace Categorical Values" in multi_function_selector:
         filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
         selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
-        filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection)
+        filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection, default=[selection[0]])
+        # st.code(type(filtered_value_selection[0]) == str)
         value = st.text_input(label="Enter The Value To Replace")
-        if st.button('See Draft'):
+        if value != '':
             replaced = replace_data(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
             st.write(replaced)
-            if st.button('Apply Changes'):
-                st.session_state.df = replaced
+        if st.button('Apply Changes'):
+            st.session_state.df = replaced
     # rep_export = download_data(st.session_state.df, label="replaed(edited)")
 # ===================================================================================================        
     if "Replace Numeric Values" in multi_function_selector:
         filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
         selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
-        filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection)
-        value = st.number_input(label="Enter The Value To Replace",value=filtered_value_selection)
-        if st.button('See Draft'):
+        filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection, default=[selection[0]])
+        value = st.number_input(label="Enter The Value To Replace" ,value=filtered_value_selection[0])
+        if value != '':
             replaced = replace_data(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
             st.write(replaced)
-            if st.button('Apply Changes'):
-                st.session_state.df = replaced
-        # rep_export = download_data(st.session_state.df, label="replaced numeric(edited)")        
+        if st.button('Apply Changes'):
+            st.session_state.df = replaced
 # ===================================================================================================
     if "Drop Columns" in multi_function_selector:
         
@@ -165,7 +165,6 @@ if uploaded_file is not None:
         
         droped = drop_items(st.session_state.df, multiselected_drop)
         st.write(droped)
-        
         if st.button('Apply Changes'):
             st.session_state.df = droped
             # drop_export = download_data(st.session_state.df, label="Droped(edited)")
@@ -364,7 +363,7 @@ if uploaded_file is not None:
                 elif fill_null_values_option == 'Most Appeared Fill':
                     filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
                 elif fill_null_values_option == 'Mean Fill':
-                    filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
+                    filled_values = fill_missing_data(filled_values, fill_null_values_option, fillna_column_selector)
                 st.write(filled_values)
                 if st.button("Apply Changes", help="Takes your data and Fill NaN Values for columns as your wish."):
                     st.session_state.df = filled_values       

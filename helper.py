@@ -114,17 +114,20 @@ def outliers(data, num_category_outliers):
 
     return path_list
 
-def replace_data(data, selected_column, to_replace, val):
-    if type(val) == str:
+def replace_data(data:pd.DataFrame, selected_column, to_replace, val):
+    replaced = data.copy(deep=True)
+    if type(to_replace[0]) == str:
         if val == 'Null':
-            data[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)
-    elif type(val) == int or type(val) == float:
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)
+        else:        
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val)    
+    elif type(to_replace[0]) == np.int64 or type(to_replace[0]) == np.float64:
         if val == -1:
-            data[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)
-    else:        
-        data[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val)
-    data[selected_column] = pd.to_numeric(data[selected_column], errors='ignore')     
-    return data
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)  
+        else:        
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val)
+    replaced[selected_column] = pd.to_numeric(replaced[selected_column], errors='ignore')     
+    return replaced
 
 def drop_items(data, selected_name):
     droped =  data.drop(selected_name, axis = 1)
@@ -157,27 +160,28 @@ def rename_columns(data, column_names):
 
 def handling_missing_values(data:pd.DataFrame, option_type, col_names=None):
     if option_type == "Drop all null value rows":
-        data = data.dropna()
+        droped = data.dropna()
     elif option_type == "Only Drop Rows that contanines all null values":
-        data = data.dropna(how="all")
+        droped = data.dropna(how="all")
     elif option_type == 'Only Drop Null Rows For a Specific Column':
-        data = data.dropna(subset=[col for col in col_names])
+        droped = data.dropna(subset=[col for col in col_names])
     # elif option_type == "Filling in Missing Values":
     #     data = data.fillna(dict_value)
-    return data
+    return droped
 
 def fill_missing_data(data:pd.DataFrame, option_type, col_name=None, to_rep=None):
+    filled = data.copy(deep=True)
     if option_type == 'Custom Fill':
-        data[col_name] = data[col_name].fillna(to_rep)
+        filled[col_name] = data[col_name].fillna(to_rep)
     elif option_type == 'Backward Fill':
-        data[col_name] = data[col_name].fillna(method='bfill')
+        filled[col_name] = data[col_name].fillna(method='bfill')
     elif option_type == 'Forward Fill':
-        data[col_name] = data[col_name].fillna(method='ffill')
+        filled[col_name] = data[col_name].fillna(method='ffill')
     elif option_type == 'Most Appeared Fill':
-        data[col_name] = data[col_name].fillna(data[col_name].mode()[0])
+        filled[col_name] = data[col_name].fillna(data[col_name].mode()[0])
     elif option_type == 'Mean Fill':
-        data[col_name] = data[col_name].fillna(data[col_name].mean())
-    return data
+        filled[col_name] = data[col_name].fillna(data[col_name].mean())
+    return filled
 
 def data_wrangling(data1, data2, key, usertype):
     if usertype == "Merging On Index":
