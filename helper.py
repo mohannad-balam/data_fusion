@@ -15,14 +15,14 @@ excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.she
 def data(data, file_type, seperator=None):
 
     if file_type == "csv":
-        data = pd.read_csv(data, encoding='utf-8-sig')
+        data = pd.read_csv(data, encoding='utf-8-sig',parse_dates=True)
         
     elif file_type == "json":
         data = pd.read_json(data)
         data = (data["devices"].apply(pd.Series))
     
     elif file_type in excel_type:
-        data = pd.read_excel(data,index_col=0)
+        data = pd.read_excel(data, parse_dates=True)
         st.sidebar.info("If you are using Excel file so there could be chance of getting minor error(temporary sollution: avoid the error by removing overview option from input box) so bear with it. It will be fixed soon")
     
     elif file_type == "plain":
@@ -30,7 +30,8 @@ def data(data, file_type, seperator=None):
             data = pd.read_table(data, sep=seperator, encoding='utf-8-sig')
         except ValueError:
             st.info("If you haven't Type the separator then dont worry about the error this error will go as you type the separator value and hit Enter.")
-
+    if 0 in data.columns or 'Unnamed: 0' in data.columns:
+        data.set_index(data.columns[0], inplace=True)
     return data
 
 @st.cache_data()
@@ -44,7 +45,7 @@ def seconddata(data, file_type, seperator=None):
         data = (data["devices"].apply(pd.Series))
     
     elif file_type in excel_type:
-        data = pd.read_excel(data)
+        data = pd.read_excel(data,parse_dates=True)
         st.sidebar.info("If you are using Excel file so there could be chance of getting minor error(temporary sollution: avoid the error by removing overview option from input box) so bear with it. It will be fixed soon")
     
     elif file_type == "plain":
@@ -52,7 +53,8 @@ def seconddata(data, file_type, seperator=None):
             data = pd.read_table(data, sep=seperator,encoding='utf-8-sig')
         except ValueError:
             st.info("If you haven't Type the separator then dont worry about the error this error will go as you type the separator value and hit Enter.")
-
+    if 0 in data.columns or 'Unnamed: 0' in data.columns:
+        data.set_index(data.columns[0], inplace=True)
     return data
 
 
@@ -205,4 +207,3 @@ def get_non_nulls(data):
     selection = data
     selection = [s for s in selection if pd.isnull(s) == False]
     return selection
-     
