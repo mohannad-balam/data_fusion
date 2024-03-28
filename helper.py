@@ -185,7 +185,7 @@ def fill_missing_data(data:pd.DataFrame, option_type, col_name=None, to_rep=None
         filled[col_name] = data[col_name].fillna(data[col_name].mean())
     return filled
 
-def data_wrangling(data1, data2, key, usertype):
+def data_wrangling(data1, data2=None, key=None, usertype=None):
     if usertype == "Merging On Index":
         data = pd.merge(data1, data2, on=key, suffixes=("_extra", "_extra0"))
         data = data[data.columns.drop(list(data.filter(regex='_extra')))]
@@ -193,9 +193,15 @@ def data_wrangling(data1, data2, key, usertype):
     
     elif usertype == "Concatenating On Axis":
         data = pd.concat([data1, data2], ignore_index=True)
+         
     return data
 
-
+def group_data(data:pd.DataFrame, col_names, group_type, col_name=None):
+    if group_type == "mean":
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].mean().round()
+    elif group_type == "median":
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].median().round()
+    return grouped
 
 def clear_image_cache():
     removing_files = glob.glob('temp/*.png')
@@ -207,3 +213,4 @@ def get_non_nulls(data):
     selection = data
     selection = [s for s in selection if pd.isnull(s) == False]
     return selection
+     

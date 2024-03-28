@@ -1,7 +1,7 @@
 from cmath import nan
 from datetime import date
 import streamlit as st
-from helper import data, seconddata, match_elements, describe, outliers, drop_items, download_data, filter_data, num_filter_data, rename_columns, clear_image_cache, handling_missing_values, data_wrangling, replace_data, get_non_nulls, fill_missing_data
+from helper import data, seconddata, match_elements, describe, outliers, drop_items, download_data, filter_data, num_filter_data, rename_columns, clear_image_cache, handling_missing_values, data_wrangling, replace_data, get_non_nulls, fill_missing_data, group_data
 import numpy as np
 import plotly.express as px
 import pandas as pd
@@ -372,7 +372,7 @@ if uploaded_file is not None:
 # ==========================================================================================================================================
 
     if "Data Wrangling" in multi_function_selector:
-        data_wrangling_option = st.radio("Choose your option as suted: ", ("Merging On Index", "Concatenating On Axis"))
+        data_wrangling_option = st.radio("Choose your option as suted: ", ("Merging On Index", "Concatenating On Axis", "Group By Columns"))
 
         if data_wrangling_option == "Merging On Index":
             data_wrangling_merging_uploaded_file = st.file_uploader("Upload Your Second file you want to merge", type=file_format_type)
@@ -396,11 +396,22 @@ if uploaded_file is not None:
             if data_wrangling_concatenating_uploaded_file is not None:
 
                 second_data = seconddata(data_wrangling_concatenating_uploaded_file, file_type=data_wrangling_concatenating_uploaded_file.type.split("/")[1])
-                concatenating_data = data_wrangling(data, second_data, None, data_wrangling_option)
+                concatenating_data = data_wrangling(st.session_state.df, second_data, None, data_wrangling_option)
                 st.write(concatenating_data)
                 if st.button("Apply Changes"):
                     st.session_state.df = concatenating_data
-                #download_data(concatenating_data, label="concatenating_on_axis")
+        
+        
+        if data_wrangling_option == "Group By Columns":
+            group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=st.session_state.df.columns)
+            if group_by_columns != []:
+                group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median'])
+                if group_type != '':
+                    cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
+                    grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
+                    st.dataframe(grouped_data)
+                    download_data(grouped_data, label="Download Grouped Data")
+            
     export = download_data(st.session_state.df, label="Edited")    
 # ==========================================================================================================================================
     st.sidebar.info("After using this app please Click Clear Cache button so that your all data is removed from the folder.")
