@@ -1,29 +1,22 @@
-from cmath import nan
-from datetime import date
 import streamlit as st
-from helper import data, seconddata, match_elements, describe, outliers, drop_items, download_data, filter_data, num_filter_data, rename_columns, clear_image_cache, handling_missing_values, data_wrangling, replace_data, get_non_nulls, fill_missing_data, group_data
-import numpy as np
+from helper import data, seconddata, match_elements, describe, see_outliers, drop_items, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, data_wrangling, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query
 import plotly.express as px
-import pandas as pd
-import seaborn as sns
+
 
 st.set_page_config(
-     page_title="Data Analysis Web App",
+     page_title="Tabular Data Analyzer",
      page_icon="🧊",
      layout="wide",
      initial_sidebar_state="expanded",
      menu_items={
-         'Get Help': 'https://github.com/everydaycodings/Data-Analysis-Web-App',
-         'Report a bug': "https://github.com/everydaycodings/Data-Analysis-Web-App/issues/new",
-         'About': "# This is a header. This is an *extremely* cool app!"
+         'Get Help': 'https://github.com/mohannad-balam',
      }
 )
 
+st.sidebar.title("Tabular Data Analyzer")
 
-st.sidebar.title("Data Analysis Web App")
-
-file_format_type = ["csv", "txt", "xls", "xlsx", "ods", "odt"]
-functions = ["Overview", "Outliers", "Display Plot", "Replace Categorical Values", "Replace Numeric Values", "Drop Columns", "Drop Categorical Rows", "Drop Numeric Rows", "Rename Columns", "Handling Missing Data", "Data Wrangling"]
+file_format_type = ["csv", "txt", "xls", "xlsx", "ods", "odt", "json"]
+functions = ["Overview", "Outliers", "Display Plot", "Replace Categorical Values", "Replace Numeric Values", "Drop Columns", "Drop Categorical Rows", "Drop Numeric Rows", "Rename Columns", "Handling Missing Data", "Data Wrangling", "Custom Queries"]
 excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
 
 uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
@@ -35,22 +28,18 @@ if uploaded_file is not None:
     if file_type == "plain":
         seperator = st.sidebar.text_input("Please Enter what seperates your data: ", max_chars=5) 
         data = data(uploaded_file, file_type,seperator)
-
         
     elif file_type in excel_type:
         data = data(uploaded_file, file_type)
-
     else:
         data = data(uploaded_file, file_type)
-
         
     if 'df' not in st.session_state:
         st.session_state.df = data.copy(deep=True)
 
-    num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
-    # num_category.append('count')
+    correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
     
-    multi_function_selector = st.sidebar.multiselect("Enter Name or Select the Column which you Want To Plot: ",functions, default=["Overview"])
+    multi_function_selector = st.sidebar.multiselect("Select The Operation You Want To Use: ",functions, default=["Overview"])
     
         
     if st.button("Reset Data"):
@@ -68,7 +57,7 @@ if uploaded_file is not None:
 
     if "Overview" in multi_function_selector:
         st.subheader("Overview For Edited Dataset")  
-        num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
+        correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
         if not num_describe is None and not category_describe is None:
             cl1, cl2 = st.columns(2)
             with cl1:
@@ -126,15 +115,25 @@ if uploaded_file is not None:
         with col5:
             st.write("Counted Null Values")
             st.dataframe(null_values)
+        
+        st.write("Correlation")
+        st.dataframe(correlation)
 
 # ==================================================================================================
     if "Outliers" in multi_function_selector:
 
-        outliers_selection = st.multiselect("Enter or select Name of the columns to see Outliers:", num_category)
-        outliers = outliers(st.session_state.df, outliers_selection)
-        
-        for i in range(len(outliers)):
-            st.image(outliers[i])
+        outliers_selection = st.selectbox("Enter or select Name of the columns to see Outliers:", num_category)
+        outliers = see_outliers(st.session_state.df, outliers_selection)
+        decisison = st.selectbox('What To do with the outliers ?',['Delete Outliers', 'Keep Outliers'],index=1)
+        if decisison == 'Delete Outliers':
+            no_outliers = delete_outliers(st.session_state.df, outliers_selection)
+            outliers = see_outliers(no_outliers, outliers_selection)
+            if st.button('Apply Changes'):
+                st.session_state.df = no_outliers
+                st.rerun()
+                
+        # for i in range(len(outliers)):
+        #     st.image(outliers[i])
 # ===================================================================================================
     if "Replace Categorical Values" in multi_function_selector:
         filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
@@ -143,22 +142,27 @@ if uploaded_file is not None:
         # st.code(type(filtered_value_selection[0]) == str)
         value = st.text_input(label="Enter The Value To Replace")
         if value != '':
-            replaced = replace_data(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
+            replaced = replace_categorical(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
             st.write(replaced)
         if st.button('Apply Changes'):
             st.session_state.df = replaced
+            st.rerun()
     # rep_export = download_data(st.session_state.df, label="replaed(edited)")
 # ===================================================================================================        
     if "Replace Numeric Values" in multi_function_selector:
-        filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
-        selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
-        filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection, default=[selection[0]])
-        value = st.number_input(label="Enter The Value To Replace" ,value=filtered_value_selection[0])
-        if value != '':
-            replaced = replace_data(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
-            st.write(replaced)
+        try:
+            filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
+            selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
+            filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection, default=[selection[0]])
+            value = st.number_input(label="Enter The Value To Replace" ,value=filtered_value_selection[0])
+            if value != '':
+                replaced = replace_numeric(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
+                st.write(replaced)
+        except:
+            value = st.number_input(label="Enter The Value To Replace" ,value=0)          
         if st.button('Apply Changes'):
             st.session_state.df = replaced
+            st.rerun()
 # ===================================================================================================
     if "Drop Columns" in multi_function_selector:
         
@@ -168,58 +172,55 @@ if uploaded_file is not None:
         st.write(droped)
         if st.button('Apply Changes'):
             st.session_state.df = droped
+            st.rerun()
             # drop_export = download_data(st.session_state.df, label="Droped(edited)")
 # =====================================================================================================================================
     if "Drop Categorical Rows" in multi_function_selector:
-
-        filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=st.session_state.df.columns)
-        selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
-        filtered_value_selection = st.multiselect("Enter Name or Select the value which you don't want in your {} column(You can choose multiple values): ".format(filter_column_selection), st.session_state.df[filter_column_selection].unique())
-        
-        st.subheader("Dataset Draft")
-        filtered_data = filter_data(st.session_state.df, filter_column_selection, filtered_value_selection)
-        st.write(filtered_data)
-        
-        if st.button('Apply Changes'):
-            st.session_state.df = filtered_data
+        try:
+            filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=st.session_state.df.columns)
+            selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
+            filtered_value_selection = st.multiselect("Enter Name or Select the value which you don't want in your {} column(You can choose multiple values): ".format(filter_column_selection), st.session_state.df[filter_column_selection].unique())
+            
+            st.subheader("Dataset Draft")
+            filtered_data = filter_data(st.session_state.df, filter_column_selection, filtered_value_selection)
+            st.write(filtered_data)
+            
+            if st.button('Apply Changes'):
+                st.session_state.df = filtered_data
+                st.rerun()
             # filtered_export = download_data(st.session_state.df, label="filtered")
-
+        except:
+            st.write("There may be no categorical columns in your dataset")
 # =============================================================================================================================
 
     if "Drop Numeric Rows" in multi_function_selector:
+        try:
+            option = st.radio(
+            "Which kind of Filteration you want",
+            ('Delete data inside the range', 'Delete data outside the range'))
 
-        option = st.radio(
-        "Which kind of Filteration you want",
-        ('Delete data inside the range', 'Delete data outside the range'))
-
-        num_filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
-        selection_range = get_non_nulls(st.session_state.df[num_filter_column_selection].unique())
-        selection_range.sort()
-        # selection_range = st.session_state.df[num_filter_column_selection].unique()
-
-        # for i in range(0, len(selection_range)) :
-        #     selection_range[i] = selection_range[i]
-        # selection_range.sort()
-
-        # selection_range = [x for x in selection_range if np.isnan(x) == False]
-
-        start_value, end_value = st.select_slider(
-        'Select a range of Numbers you want to edit or keep',
-        options=selection_range,
-        value=(min(selection_range), max(selection_range))
-        )
-        
-        if option == "Delete data inside the range":
-            st.write('We will be removing all the values between ', int(start_value), 'and', int(end_value))
-            num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
-        else:
-            st.write('We will be Keeping all the values between', int(start_value), 'and', int(end_value))
-            num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
-        st.write(num_filtered_data)    
-        if st.button('Apply Changes'):
-            st.session_state.df = num_filtered_data
+            num_filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
+            selection_range = get_non_nulls(st.session_state.df[num_filter_column_selection].unique())
+            selection_range.sort()
+            start_value, end_value = st.select_slider(
+            'Select a range of Numbers you want to edit or keep',
+            options=selection_range,
+            value=(min(selection_range), max(selection_range))
+            )
+            
+            if option == "Delete data inside the range":
+                st.write('We will be removing all the values between ', int(start_value), 'and', int(end_value))
+                num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
+            else:
+                st.write('We will be Keeping all the values between', int(start_value), 'and', int(end_value))
+                num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
+            st.write(num_filtered_data)    
+            if st.button('Apply Changes'):
+                st.session_state.df = num_filtered_data
+                st.rerun()
             # num_filtered_export = download_data(st.session_state.df, label="num_filtered")
-
+        except:
+            st.write("There may be no Numeric Columns in your dataset")
 
 # =======================================================================================================================================
 
@@ -242,24 +243,24 @@ if uploaded_file is not None:
             st.write(st.session_state.df)
             # export_rename_column = download_data(st.session_state.df, label="rename_column")
             st.session_state.rename_dict = {}
+            st.rerun()
     
 # ===================================================================================================================
  
     if "Display Plot" in multi_function_selector:
         all_category = num_category+str_category
-        selection = st.selectbox("Select The Type of Chart", ['Line Chart','Bar Chart','Histogram','Scatter Chart','Pie Chart'])
+        selection = st.selectbox("Select The Type of Chart", ['Line Chart','Bar Chart','Histogram','Scatter Chart','Pie Chart', 'heatmap'])
         if selection == 'Line Chart':
-            st.subheader("Numeric")
-            num1_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", num_category)
-            st.subheader("Numeric")
-            num_category.append('')
-            num2_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", num_category)
+            st.subheader("All Catgeories")
+            num1_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
+            st.subheader("All Categories")
+            # all_category.append('')
+            num2_multi_bar_plotting = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
             for i in range(len(num1_multi_bar_plotting)):
                 column1 = num1_multi_bar_plotting[i]
                 for i in range(len(num2_multi_bar_plotting)):
                     column2 = num2_multi_bar_plotting[i]
                     st.markdown("#### Bar Plot for {} and {} columns".format(column1,column2))
-                    #st.line_chart(data=st.session_state.df, x=column1, y=column2)     
                     line = px.line(data_frame=st.session_state.df, x=column1, y=column2) 
                     st.plotly_chart(line)
         elif selection == 'Bar Chart':
@@ -267,7 +268,7 @@ if uploaded_file is not None:
             st.subheader("Categories")
             str_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", str_category)
             st.subheader("Numeric")
-            num_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", num_category)
+            num_multi_bar_plotting = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", num_category)
             for i in range(len(str_multi_bar_plotting)):
                 column1 = str_multi_bar_plotting[i]
                 for i in range(len(num_multi_bar_plotting)):
@@ -282,7 +283,7 @@ if uploaded_file is not None:
                         hue = st.selectbox("input the 3rd column", str_category, index=index)
                         if hue != 'none':
                             st.markdown("#### Bar Plot for {} and {} column, grouped by {}".format(column1,column2,hue))
-                            bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=hue,barmode='overlay', orientation='v',opacity=1,facet_col=hue)
+                            bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=hue, barmode='overlay', orientation='v',opacity=1,facet_col=hue)
                             st.plotly_chart(bar)
                         else:      
                             st.markdown("#### Bar Plot for {} and {} columns".format(column1,column2))
@@ -292,19 +293,17 @@ if uploaded_file is not None:
         elif selection == 'Scatter Chart':
             all_category = num_category+str_category
             st.subheader("All Values")
-            str_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
+            multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
             st.subheader("All Values")
-            all_category.append('')
-            num_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
-            for i in range(len(str_multi_bar_plotting)):
-                column1 = str_multi_bar_plotting[i]
-                for i in range(len(num_multi_bar_plotting)):
-                    column2 = num_multi_bar_plotting[i]
+            # all_category.append('')
+            multi_bar_plotting2 = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
+            for i in range(len(multi_bar_plotting)):
+                column1 = multi_bar_plotting[i]
+                for i in range(len(multi_bar_plotting2)):
+                    column2 = multi_bar_plotting2[i]
                     st.markdown("#### Bar Plot for {} and {} columns".format(column1,column2))
-                    #st.scatter_chart(data=st.session_state.df, x=column1, y=column2)
                     scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2)
                     st.plotly_chart(scatter)
-            all_category.remove('')
         elif selection == 'Histogram':
             st.subheader("All Values")
             num_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
@@ -321,6 +320,9 @@ if uploaded_file is not None:
                     st.markdown("#### Pie Plot for {} column".format(val))
                     pie_chart = px.pie(d,values='count', names=val)
                     st.plotly_chart(pie_chart)
+        elif selection == 'heatmap' :
+            heat_map = px.imshow(st.session_state.df.corr())
+            st.plotly_chart(heat_map)    
 # ====================================================================================================================    
 
     if "Handling Missing Data" in multi_function_selector:
@@ -339,6 +341,7 @@ if uploaded_file is not None:
                 st.write(droped_null_value)      
                 if st.button("Apply Changes"):
                     st.session_state.df = droped_null_value
+                    st.rerun()
                 # export_rename_column = download_data(droped_null_value, label="fillna_column")
             
             elif handling_missing_value_option == "Filling in Missing Values":
@@ -367,7 +370,8 @@ if uploaded_file is not None:
                     filled_values = fill_missing_data(filled_values, fill_null_values_option, fillna_column_selector)
                 st.write(filled_values)
                 if st.button("Apply Changes", help="Takes your data and Fill NaN Values for columns as your wish."):
-                    st.session_state.df = filled_values       
+                    st.session_state.df = filled_values   
+                    st.rerun()    
 
 # ==========================================================================================================================================
 
@@ -387,6 +391,7 @@ if uploaded_file is not None:
                 st.write(merge_data)
                 if st.button("Apply Changes"):
                     st.session_state.df = merge_data
+                    st.rerun()
                 #download_data(merge_data, label="merging_on_index")
 
         if data_wrangling_option == "Concatenating On Axis":
@@ -400,29 +405,28 @@ if uploaded_file is not None:
                 st.write(concatenating_data)
                 if st.button("Apply Changes"):
                     st.session_state.df = concatenating_data
+                    st.rerun()
         
         
         if data_wrangling_option == "Group By Columns":
             group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=st.session_state.df.columns)
             if group_by_columns != []:
-                group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median'])
+                group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median','des'])
                 if group_type != '':
                     cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
                     grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
                     st.dataframe(grouped_data)
                     download_data(grouped_data, label="Download Grouped Data")
-            
-    export = download_data(st.session_state.df, label="Edited")    
+       
+       
+    if "Custom Queries" in multi_function_selector:
+        st.header("Custom Queries")
+        query_type = st.selectbox("Query Type",['SQL', 'Pure Python'])
+        query = st.text_input("Type Your Query Here", help='ex : Age < 35')
+        if st.button("Execute Query"):
+            result = get_query(data=st.session_state.df,query=query,query_type=query_type)
+            st.dataframe(result)
+            download_data(result, label="Download Query Data")      
+    export = download_data(st.session_state.df, label="Edited") 
+    # st.rerun()   
 # ==========================================================================================================================================
-    st.sidebar.info("After using this app please Click Clear Cache button so that your all data is removed from the folder.")
-    if st.sidebar.button("Clear Cache"):
-        clear_image_cache()
-
-else:
-    with open('samples/sample.zip', 'rb') as f:
-        st.sidebar.download_button(
-                label="Download Sample Data and Use It",
-                data=f,
-                file_name='smaple_data.zip',
-                help = "Download some sample data and use it to explore this web app."
-            )
