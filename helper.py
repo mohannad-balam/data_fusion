@@ -3,6 +3,7 @@ import streamlit as st
 import datetime, pytz
 import glob, os
 import numpy as np
+import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pandasql import sqldf
@@ -20,7 +21,7 @@ def data(data, file_type, seperator=None):
         data = pd.read_json(data)
     
     elif file_type in excel_type:
-        data = pd.read_excel(data, parse_dates=True) 
+        data = pd.read_excel(data, parse_dates=True)
     
     elif file_type == "plain":
         try:
@@ -39,15 +40,13 @@ def seconddata(data, file_type, seperator=None):
 
     elif file_type == "json":
         data = pd.read_json(data)
-        # data = (data["devices"].apply(pd.Series))
     
     elif file_type in excel_type:
         data = pd.read_excel(data,parse_dates=True)
-        # st.sidebar.info("If you are using Excel file so there could be chance of getting minor error(temporary sollution: avoid the error by removing overview option from input box) so bear with it. It will be fixed soon")
     
     elif file_type == "plain":
         try:
-            data = pd.read_table(data, sep=seperator)
+            data = pd.read_table(data, sep=seperator, delimiter=seperator)
         except ValueError:
             st.info("If you haven't Type the separator then dont worry about the error this error will go as you type the separator value and hit Enter.")
     if 0 in data.columns or 'Unnamed: 0' in data.columns:
@@ -76,7 +75,31 @@ def download_data(data:pd.DataFrame, label):
                         )
         return export_data
 
-
+def get_unique(data:pd.DataFrame):
+    col1,col2,col3,col4 = st.columns(4)
+    i = 1
+    for col_name in data:
+        if i == 1:
+            with col1:
+                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))
+                i+=1
+        elif i == 2:
+            with col2:
+                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))
+                i+=1     
+        elif i == 3:
+            with col3:
+                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))   
+                i+=1
+        elif i == 4:
+            with col4:
+                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))   
+                i+=1       
+        if i == 5:
+            i = 1
+            col1,col2,col3,col4 = st.columns(4)
+            
+             
 def describe(data):
     global num_category, str_category
     numeric_data = data.select_dtypes(include=[np.number])
@@ -97,15 +120,15 @@ def see_outliers(data, num_category_outliers):
     plt.figure(figsize=(12,6))
     flierprops = dict(marker='o', markerfacecolor='purple', markersize=6,
                     linestyle='none', markeredgecolor='black')
-    path_list = [] 
     column = num_category_outliers
+    box_plot = px.box(data_frame=data, x=column)
+    st.plotly_chart(box_plot)
     plot = sns.boxplot(x=column, flierprops=flierprops, data=data)
     fig = plot.get_figure()
     st.pyplot(fig)
     return
 
-def delete_outliers(data, col_name):
-    
+def delete_outliers(data, col_name): 
     Q1 = data[col_name].quantile(0.25)
     Q3 = data[col_name].quantile(0.75)
     IQR = Q3 - Q1
@@ -168,8 +191,6 @@ def handling_missing_values(data:pd.DataFrame, option_type, col_names=None):
         droped = data.dropna(how="all")
     elif option_type == 'Only Drop Null Rows For a Specific Column':
         droped = data.dropna(subset=[col for col in col_names])
-    # elif option_type == "Filling in Missing Values":
-    #     data = data.fillna(dict_value)
     return droped.reset_index(drop=True)
 
 def fill_missing_data(data:pd.DataFrame, option_type, col_name=None, to_rep=None):
@@ -218,8 +239,18 @@ def get_non_nulls(data):
     return selection
 
 def get_query(data:pd.DataFrame,query,query_type):
+    qr = data.copy(deep=True)
     if query_type == 'Pure Python':
-        df = data.query(query).reset_index(drop=True)
+        res =  qr.query(query).reset_index(drop=True)
     elif query_type == 'SQL':
-        df = sqldf(query=query, env=locals())
-    return df
+        res =  sqldf(query=query, env=locals())
+    return res
+
+def sql_query(data:pd.DataFrame,query):
+    qr = data.copy(deep=True)
+    return sqldf(query=query, env=locals())
+
+def python_query(data:pd.DataFrame,query):
+    qr = data.copy(deep=True)
+    res = qr.query(query).reset_index(drop=True)
+    return res
