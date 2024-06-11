@@ -11,14 +11,14 @@ try:
         layout="wide",
         initial_sidebar_state="expanded",
         menu_items={
-            'Get Help': 'https://github.com/mohannad-balam',
+            'Get Help': 'https://github.com/sohailelabeidi',
         }
     )
 
     st.sidebar.title("Tabular Data Analyzer")
 
     file_format_type = ["csv", "txt", "xls", "xlsx", "ods", "odt", "json"]
-    functions = ["Overview", "Outliers", "Display Plot", "Replace Categorical Values", "Replace Numeric Values", "Drop Columns", "Drop Categorical Rows", "Drop Numeric Rows", "Rename Columns", "Handling Missing Data", "Data Wrangling", "Custom Queries"]
+    pages = ["Overview", "Outliers", "Data Pre-processing" ,"Display Plot", "Data Wrangling", "Custom Queries"]
     excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
 
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
@@ -44,24 +44,26 @@ try:
 
         correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
         
-        multi_function_selector = st.sidebar.multiselect("Select The Operation You Want To Use: ",functions, default=["Overview"])
+        multi_function_selector = st.sidebar.selectbox("Select The Operation You Want To Use: ",pages)
         
             
-        with st.expander("See Dataset"):
-            if st.button("Reset Data"):
-                st.session_state.df = data.copy(deep=True)
-        
+        with st.expander("Original Dataset"):
+
             st.subheader("Original Dataset Preview")
             st.dataframe(data)
 
+        with st.expander("Edited Dataset"):
+            if st.button("Reset Data"):
+                st.session_state.df = data.copy(deep=True)
             st.subheader("Edited Dataset Preview")        
             st.dataframe(st.session_state.df)    
             st.text(" ")
             st.text(" ")
             st.text(" ")
 
+    # ==================================================================================================
         if "Overview" in multi_function_selector:
-            st.subheader("Overview For Edited Dataset") 
+            st.subheader("Overview For Dataset") 
             
             with st.expander("See Unique Values"):
                 st.markdown('Unique Values For Each Column')
@@ -142,111 +144,181 @@ try:
                     st.session_state.df = no_outliers
                     st.rerun()
     # ===================================================================================================
-        if "Replace Categorical Values" in multi_function_selector:
-            filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
-            selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
-            filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection, default=[selection[0]])
-            value = st.text_input(label="Enter The Value To Replace")
-            if value != '':
-                replaced = replace_categorical(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
-                st.write(replaced)
-            if st.button('Apply Changes'):
-                st.session_state.df = replaced
-                st.rerun()
-    # ===================================================================================================        
-        if "Replace Numeric Values" in multi_function_selector:
-            try:
-                filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
+        if "Data Pre-processing" in multi_function_selector:
+            options = st.multiselect('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data"])
+            if "Replace Categorical Values" in options:
+                filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
                 selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
                 filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection, default=[selection[0]])
-                value = st.number_input(label="Enter The Value To Replace" ,value=filtered_value_selection[0])
+                value = st.text_input(label="Enter The Value To Replace")
                 if value != '':
-                    replaced = replace_numeric(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
+                    replaced = replace_categorical(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
                     st.write(replaced)
-            except:
-                value = st.number_input(label="Enter The Value To Replace" ,value=0)          
-            if st.button('Apply Changes'):
-                st.session_state.df = replaced
-                st.rerun()
-    # ===================================================================================================
-        if "Drop Columns" in multi_function_selector:
-            
-            multiselected_drop = st.multiselect("Please Type or select one or Multipe Columns you want to drop: ", st.session_state.df.columns)
-            
-            droped = drop_items(st.session_state.df, multiselected_drop)
-            st.write(droped)
-            if st.button('Apply Changes'):
-                st.session_state.df = droped
-                st.rerun()
-    # =====================================================================================================================================
-        if "Drop Categorical Rows" in multi_function_selector:
-            try:
-                filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=st.session_state.df.columns)
-                selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
-                filtered_value_selection = st.multiselect("Enter Name or Select the value which you don't want in your {} column(You can choose multiple values): ".format(filter_column_selection), st.session_state.df[filter_column_selection].unique())
-                
-                st.subheader("Dataset Draft")
-                filtered_data = filter_data(st.session_state.df, filter_column_selection, filtered_value_selection)
-                st.write(filtered_data)
-                
                 if st.button('Apply Changes'):
-                    st.session_state.df = filtered_data
+                    st.session_state.df = replaced
                     st.rerun()
-            except:
-                st.write("There may be no categorical columns in your dataset")
-    # =============================================================================================================================
 
-        if "Drop Numeric Rows" in multi_function_selector:
-            try:
-                option = st.radio(
-                "Which kind of Filteration you want",
-                ('Delete data inside the range', 'Delete data outside the range'))
-
-                num_filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
-                selection_range = get_non_nulls(st.session_state.df[num_filter_column_selection].unique())
-                selection_range.sort()
-
-                start_value, end_value = st.select_slider(
-                'Select a range of Numbers you want to edit or keep',
-                options=selection_range,
-                value=(min(selection_range), max(selection_range))
-                )
-                
-                if option == "Delete data inside the range":
-                    st.write('We will be removing all the values between ', int(start_value), 'and', int(end_value))
-                    num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
-                else:
-                    st.write('We will be Keeping all the values between', int(start_value), 'and', int(end_value))
-                    num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
-                st.write(num_filtered_data)    
+            elif "Replace Numeric Values" in options:
+                try:
+                    filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
+                    selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
+                    filtered_value_selection = st.multiselect("Enter Name or Select the value which you want to replcae in your {} column(You can choose multiple values): ".format(filter_column_selection), selection, default=[selection[0]])
+                    value = st.number_input(label="Enter The Value To Replace" ,value=filtered_value_selection[0])
+                    if value != '':
+                        replaced = replace_numeric(data=st.session_state.df, selected_column=filter_column_selection, to_replace=filtered_value_selection, val=value)
+                        st.write(replaced)
+                except:
+                    value = st.number_input(label="Enter The Value To Replace" ,value=0)          
                 if st.button('Apply Changes'):
-                    st.session_state.df = num_filtered_data
+                    st.session_state.df = replaced
                     st.rerun()
-            except:
-                st.write("There may be no Numeric Columns in your dataset")
+            
+            elif "Drop Columns" in options:
+                multiselected_drop = st.multiselect("Please Type or select one or Multipe Columns you want to drop: ", st.session_state.df.columns)
+            
+                droped = drop_items(st.session_state.df, multiselected_drop)
+                st.write(droped)
+                if st.button('Apply Changes'):
+                    st.session_state.df = droped
+                    st.rerun()
+            
+            elif "Drop Categorical Rows" in options:
+                try:
+                    filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=st.session_state.df.columns)
+                    
+                    if filter_column_selection not in st.session_state.df.columns:
+                        raise ValueError(f"Selected column '{filter_column_selection}' is not in the DataFrame")
 
-    # =======================================================================================================================================
+                    selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
+                    if not selection:
+                        raise ValueError(f"No valid data in the selected column '{filter_column_selection}'")
 
-        if "Rename Columns" in multi_function_selector:
+                    filtered_value_selection = st.multiselect(
+                        "Enter Name or Select the value which you don't want in your {} column (You can choose multiple values):".format(filter_column_selection),
+                        options=selection
+                    )
 
-            if 'rename_dict' not in st.session_state:
-                st.session_state.rename_dict = {}
+                    st.subheader("Dataset Draft")
+                    filtered_data = filter_data(st.session_state.df, filter_column_selection, filtered_value_selection)
+                    st.write(filtered_data)
 
-            rename_dict = {}
-            rename_column_selector = st.selectbox("Please Select or Enter a column Name you want to rename: ", options=st.session_state.df.columns)
-            rename_text_data = st.text_input("Enter the New Name for the {} column".format(rename_column_selector), max_chars=50)
+                    if st.button('Apply Changes'):
+                        st.session_state.df = filtered_data
+                        st.experimental_rerun()
+
+                except ValueError as ve:
+                    st.error(f"ValueError: {ve}")
+                except Exception as e:
+                    st.error(f"An unexpected error occurred: {e}")
+
+            elif "Drop Numeric Rows" in options:
+                try:
+                    option = st.radio(
+                        "Which kind of Filtration you want",
+                        ('Delete data inside the range', 'Delete data outside the range')
+                    )
+
+                    num_filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=num_category)
+
+                    if num_filter_column_selection not in st.session_state.df.columns:
+                        raise ValueError(f"Selected column '{num_filter_column_selection}' is not in the DataFrame")
+
+                    selection_range = get_non_nulls(st.session_state.df[num_filter_column_selection].unique())
+                    if not selection_range:
+                        raise ValueError(f"No valid data in the selected column '{num_filter_column_selection}'")
+
+                    selection_range.sort()
+
+                    start_value, end_value = st.select_slider(
+                        'Select a range of Numbers you want to edit or keep',
+                        options=selection_range,
+                        value=(min(selection_range), max(selection_range))
+                    )
+
+                    if option == "Delete data inside the range":
+                        st.write(f'We will be removing all the values between {int(start_value)} and {int(end_value)}')
+                        num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
+                    else:
+                        st.write(f'We will be Keeping all the values between {int(start_value)} and {int(end_value)}')
+                        num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
+
+                    st.write(num_filtered_data)
+
+                    if st.button('Apply Changes'):
+                        st.session_state.df = num_filtered_data
+                        st.experimental_rerun()
+
+                except ValueError as ve:
+                    st.error(f"ValueError: {ve}")
+                except Exception as e:
+                    st.error(f"An unexpected error occurred: {e}")
+
+            elif "Rename Columns" in options:
+                if 'rename_dict' not in st.session_state:
+                    st.session_state.rename_dict = {}
+
+                rename_dict = {}
+                rename_column_selector = st.selectbox("Please Select or Enter a column Name you want to rename: ", options=st.session_state.df.columns)
+                rename_text_data = st.text_input("Enter the New Name for the {} column".format(rename_column_selector), max_chars=50)
 
 
-            if st.button("Draft Changes", help="when you want to rename multiple columns/single column  so first you have to click Save Draft button this updates the data and then press Rename Columns Button."):
-                st.session_state.rename_dict[rename_column_selector] = rename_text_data
-            st.code(st.session_state.rename_dict)
+                if st.button("Draft Changes", help="when you want to rename multiple columns/single column  so first you have to click Save Draft button this updates the data and then press Rename Columns Button."):
+                    st.session_state.rename_dict[rename_column_selector] = rename_text_data
+                st.code(st.session_state.rename_dict)
 
-            if st.button("Apply Changes", help="Takes your data and rename the column as your wish."):
-                st.session_state.df = rename_columns(st.session_state.df, st.session_state.rename_dict)
-                st.write(st.session_state.df)
-                st.session_state.rename_dict = {}
-                st.rerun()
-        
+                if st.button("Apply Changes", help="Takes your data and rename the column as your wish."):
+                    st.session_state.df = rename_columns(st.session_state.df, st.session_state.rename_dict)
+                    st.write(st.session_state.df)
+                    st.session_state.rename_dict = {}
+                    st.rerun()
+            
+            elif "Handling Missing Data" in options:
+                if column_with_null_values.empty:
+                    st.subheader("The Dataset is Clean")
+                else:    
+                    handling_missing_value_option = st.radio("Select What you want to do", ("Drop Null Values", "Filling in Missing Values"))
+                    if handling_missing_value_option == "Drop Null Values":
+                        drop_null_values_option = st.selectbox("Choose your option as suted: ", ["Drop all null value rows", "Only Drop Rows that contanines all null values",'Only Drop Null Rows For a Specific Column'])
+                        if drop_null_values_option == 'Only Drop Null Rows For a Specific Column':
+                            selcted_columns = st.multiselect("Choose a specific column/s", options=column_with_null_values)
+                            droped_null_value = handling_missing_values(data=st.session_state.df, option_type=drop_null_values_option, col_names=selcted_columns)
+                        else:
+                            droped_null_value = handling_missing_values(st.session_state.df, drop_null_values_option)
+                        st.code(droped_null_value.isnull().sum())
+                        st.write(droped_null_value)      
+                        if st.button("Apply Changes"):
+                            st.session_state.df = droped_null_value
+                            st.rerun()
+                    
+                    elif handling_missing_value_option == "Filling in Missing Values":
+                        fillna_column_selector = st.selectbox("Please Select or Enter a column Name you want to fill the NaN Values: ", options=column_with_null_values)
+                        options = ["Backward Fill", "Forward Fill",'Most Appeared Fill', 'Mean Fill', 'Custom Fill']
+                        fill_null_values_option = st.selectbox("Choose your option as suted: ",options , index=options.index('Custom Fill'))
+                        filled_values = st.session_state.df
+                        if fill_null_values_option == 'Custom Fill':
+                            fillna_text_data = st.text_input("Enter the New Value for the {} Column NaN Value".format(fillna_column_selector), max_chars=50)
+                            if fillna_text_data != '':
+                                if fillna_column_selector in num_category:
+                                    try:
+                                        fillna_text_data = float(fillna_text_data)
+                                    except:
+                                        fillna_text_data = int(fillna_text_data)
+                                else:
+                                    fillna_text_data = fillna_text_data
+                                filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector, fillna_text_data)
+                        elif fill_null_values_option == 'Backward Fill':
+                            filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
+                        elif fill_null_values_option == 'Forward Fill':
+                            filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
+                        elif fill_null_values_option == 'Most Appeared Fill':
+                            filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
+                        elif fill_null_values_option == 'Mean Fill':
+                            filled_values = fill_missing_data(filled_values, fill_null_values_option, fillna_column_selector)
+                        st.write(filled_values)
+                        if st.button("Apply Changes", help="Takes your data and Fill NaN Values for columns as your wish."):
+                            st.session_state.df = filled_values   
+                            st.rerun()    
+
     # ===================================================================================================================
     
         if "Display Plot" in multi_function_selector:
@@ -350,55 +422,6 @@ try:
             elif selection == 'heatmap' :
                 heat_map = px.imshow(st.session_state.df.corr())
                 st.plotly_chart(heat_map)    
-    # ====================================================================================================================    
-
-        if "Handling Missing Data" in multi_function_selector:
-            if column_with_null_values.empty:
-                st.subheader("The Dataset is Clean")
-            else:    
-                handling_missing_value_option = st.radio("Select What you want to do", ("Drop Null Values", "Filling in Missing Values"))
-                if handling_missing_value_option == "Drop Null Values":
-                    drop_null_values_option = st.selectbox("Choose your option as suted: ", ["Drop all null value rows", "Only Drop Rows that contanines all null values",'Only Drop Null Rows For a Specific Column'])
-                    if drop_null_values_option == 'Only Drop Null Rows For a Specific Column':
-                        selcted_columns = st.multiselect("Choose a specific column/s", options=column_with_null_values)
-                        droped_null_value = handling_missing_values(data=st.session_state.df, option_type=drop_null_values_option, col_names=selcted_columns)
-                    else:
-                        droped_null_value = handling_missing_values(st.session_state.df, drop_null_values_option)
-                    st.code(droped_null_value.isnull().sum())
-                    st.write(droped_null_value)      
-                    if st.button("Apply Changes"):
-                        st.session_state.df = droped_null_value
-                        st.rerun()
-                
-                elif handling_missing_value_option == "Filling in Missing Values":
-                    fillna_column_selector = st.selectbox("Please Select or Enter a column Name you want to fill the NaN Values: ", options=column_with_null_values)
-                    options = ["Backward Fill", "Forward Fill",'Most Appeared Fill', 'Mean Fill', 'Custom Fill']
-                    fill_null_values_option = st.selectbox("Choose your option as suted: ",options , index=options.index('Custom Fill'))
-                    filled_values = st.session_state.df
-                    if fill_null_values_option == 'Custom Fill':
-                        fillna_text_data = st.text_input("Enter the New Value for the {} Column NaN Value".format(fillna_column_selector), max_chars=50)
-                        if fillna_text_data != '':
-                            if fillna_column_selector in num_category:
-                                try:
-                                    fillna_text_data = float(fillna_text_data)
-                                except:
-                                    fillna_text_data = int(fillna_text_data)
-                            else:
-                                fillna_text_data = fillna_text_data
-                            filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector, fillna_text_data)
-                    elif fill_null_values_option == 'Backward Fill':
-                        filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
-                    elif fill_null_values_option == 'Forward Fill':
-                        filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
-                    elif fill_null_values_option == 'Most Appeared Fill':
-                        filled_values = fill_missing_data(st.session_state.df, fill_null_values_option, fillna_column_selector)
-                    elif fill_null_values_option == 'Mean Fill':
-                        filled_values = fill_missing_data(filled_values, fill_null_values_option, fillna_column_selector)
-                    st.write(filled_values)
-                    if st.button("Apply Changes", help="Takes your data and Fill NaN Values for columns as your wish."):
-                        st.session_state.df = filled_values   
-                        st.rerun()    
-
     # ==========================================================================================================================================
 
         if "Data Wrangling" in multi_function_selector:
@@ -442,8 +465,8 @@ try:
                         grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
                         st.dataframe(grouped_data)
                         download_data(grouped_data, label="Download Grouped Data")
-        
-        
+
+     # ==========================================================================================================================================   
         if "Custom Queries" in multi_function_selector:
             st.header("Custom Queries")
             query_type = st.selectbox("Query Type",['SQL', 'Pure Python'])
