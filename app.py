@@ -2,6 +2,7 @@ import streamlit as st
 from helper import data, seconddata, match_elements, describe, see_outliers, drop_items, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, data_wrangling, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique
 import plotly.express as px
 import time
+from streamlit_option_menu import option_menu
 
 try:
     
@@ -42,9 +43,18 @@ try:
         if 'df' not in st.session_state:
             st.session_state.df = data.copy(deep=True)
 
+        with st.sidebar:
+            menu = option_menu(
+            "Operations", 
+            ["Overview", "Outlier Detection", "Data Visualization", "Data Pre-processing", "Data Wrangling Operations", "Execute Custom Queries"], 
+            icons=["house", "exclamation-circle", "pie-chart", "filter", "tools", "search"],
+            menu_icon="cast", 
+            default_index=0,
+         )
+
         correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
         
-        multi_function_selector = st.sidebar.selectbox("Select The Operation You Want To Use: ",pages)
+        # multi_function_selector = st.sidebar.selectbox("Select The Operation You Want To Use: ",pages)
         
             
         with st.expander("Original Dataset"):
@@ -62,7 +72,7 @@ try:
             st.text(" ")
 
     # ==================================================================================================
-        if "Overview" in multi_function_selector:
+        if "Overview" in menu:
             st.subheader("Overview For Dataset") 
             
             with st.expander("See Unique Values"):
@@ -132,7 +142,7 @@ try:
             st.dataframe(correlation)
 
     # ==================================================================================================
-        if "Outliers" in multi_function_selector:
+        if "Outlier Detection" in menu:
 
             outliers_selection = st.selectbox("Enter or select Name of the columns to see Outliers:", num_category)
             outliers = see_outliers(st.session_state.df, outliers_selection)
@@ -144,7 +154,7 @@ try:
                     st.session_state.df = no_outliers
                     st.rerun()
     # ===================================================================================================
-        if "Data Pre-processing" in multi_function_selector:
+        if "Data Pre-processing" in menu:
             options = st.multiselect('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data"])
             if "Replace Categorical Values" in options:
                 filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
@@ -321,7 +331,7 @@ try:
 
     # ===================================================================================================================
     
-        if "Display Plot" in multi_function_selector:
+        if "Data Visualization" in menu:
             all_category = num_category+str_category
             selection = st.selectbox("Select The Type of Chart", ['Line Chart','Bar Chart','Histogram','Scatter Chart','Pie Chart', 'heatmap'])
             if selection == 'Line Chart':
@@ -424,7 +434,7 @@ try:
                 st.plotly_chart(heat_map)    
     # ==========================================================================================================================================
 
-        if "Data Wrangling" in multi_function_selector:
+        if "Data Wrangling Operations" in menu:
             data_wrangling_option = st.radio("Choose your option as suted: ", ("Merging On Index", "Concatenating On Axis", "Group By Columns"))
 
             if data_wrangling_option == "Merging On Index":
@@ -467,7 +477,7 @@ try:
                         download_data(grouped_data, label="Download Grouped Data")
 
      # ==========================================================================================================================================   
-        if "Custom Queries" in multi_function_selector:
+        if "Execute Custom Queries" in menu:
             st.header("Custom Queries")
             query_type = st.selectbox("Query Type",['SQL', 'Pure Python'])
             query = st.text_input("Type Your Query Here", help='ex : Age < 35')
