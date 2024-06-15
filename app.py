@@ -1,5 +1,5 @@
 import streamlit as st
-from helper import data, seconddata, match_elements, describe, see_outliers, drop_items, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, data_wrangling, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique
+from helper import data, seconddata, match_elements, describe, see_outliers, drop_columns, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, data_wrangling, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique
 import plotly.express as px
 import time
 from streamlit_option_menu import option_menu
@@ -19,7 +19,6 @@ try:
     st.sidebar.title("Tabular Data Analyzer")
 
     file_format_type = ["csv", "txt", "xls", "xlsx", "ods", "odt", "json"]
-    pages = ["Overview", "Outliers", "Data Pre-processing" ,"Display Plot", "Data Wrangling", "Custom Queries"]
     excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
 
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
@@ -52,11 +51,8 @@ try:
             default_index=0,
          )
 
-        correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
-        
-        # multi_function_selector = st.sidebar.selectbox("Select The Operation You Want To Use: ",pages)
-        
-            
+        correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category,column_with_null_values,most_repeated = describe(st.session_state.df)
+                
         with st.expander("Original Dataset"):
 
             st.subheader("Original Dataset Preview")
@@ -79,7 +75,7 @@ try:
                 st.markdown('Unique Values For Each Column')
                 get_unique(st.session_state.df) 
 
-            correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values = describe(st.session_state.df)
+            correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values,most_repeated = describe(st.session_state.df)
             if not num_describe is None and not category_describe is None:
                 cl1, cl2 = st.columns(2)
                 with cl1:
@@ -138,6 +134,10 @@ try:
                 st.write("Counted Null Values")
                 st.dataframe(null_values)
             
+            with col8:
+                st.write("Most Repeated")
+                st.dataframe(most_repeated)
+            
             st.write("Correlation")
             st.dataframe(correlation)
 
@@ -186,7 +186,7 @@ try:
             elif "Drop Columns" in options:
                 multiselected_drop = st.multiselect("Please Type or select one or Multipe Columns you want to drop: ", st.session_state.df.columns)
             
-                droped = drop_items(st.session_state.df, multiselected_drop)
+                droped = drop_columns(st.session_state.df, multiselected_drop)
                 st.write(droped)
                 if st.button('Apply Changes'):
                     st.session_state.df = droped
