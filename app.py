@@ -143,16 +143,19 @@ try:
 
     # ==================================================================================================
         if "Outlier Detection" in menu:
+            st.subheader("Outlier Detection")
 
-            outliers_selection = st.selectbox("Enter or select Name of the columns to see Outliers:", num_category)
-            outliers = see_outliers(st.session_state.df, outliers_selection)
-            decisison = st.selectbox('What To do with the outliers ?',['Delete Outliers', 'Keep Outliers'],index=1)
-            if decisison == 'Delete Outliers':
-                no_outliers = delete_outliers(st.session_state.df, outliers_selection)
-                outliers = see_outliers(no_outliers, outliers_selection)
-                if st.button('Apply Changes'):
-                    st.session_state.df = no_outliers
-                    st.rerun()
+            try:
+                outliers_selection = st.selectbox("Enter or select Name of the columns to see Outliers:", num_category)
+                outliers = see_outliers(st.session_state.df, outliers_selection)
+                decisison = st.selectbox('What To do with the outliers ?',['Delete Outliers'])
+                if decisison == 'Delete Outliers':
+                    no_outliers = delete_outliers(st.session_state.df, outliers_selection)
+                    if st.button('Apply Changes'):
+                        st.session_state.df = no_outliers
+                        st.rerun()
+            except Exception as e:
+                st.error(f"Error during outlier detection or handling: {e}")
     # ===================================================================================================
         if "Data Pre-processing" in menu:
             options = st.multiselect('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data"])
