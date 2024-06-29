@@ -19,7 +19,7 @@ def data(file_path, file_type, separator=None):
             data = pd.read_csv(file_path, parse_dates=True)
         elif file_type == "json":
             data = pd.read_json(file_path)
-        elif file_type in ["xlsx", "xls"]:  
+        elif file_type in excel_type:  
             data = pd.read_excel(file_path, parse_dates=True)
         elif file_type == "plain":
             try:
@@ -273,92 +273,90 @@ def rename_columns(data, column_names):
     rename_column = data.rename(columns=column_names)
     return rename_column
 
-def plot_linechart(num1_multi_bar_plotting,num2_multi_bar_plotting):
+def plot_Chart(first_plot,selection,second_plot=None):
     all_category = num_category+str_category
-    for i in range(len(num1_multi_bar_plotting)):
-                    column1 = num1_multi_bar_plotting[i]
-                    for i in range(len(num2_multi_bar_plotting)):
-                        column2 = num2_multi_bar_plotting[i]
-                        all_category.append('none')
-                        color = st.selectbox("Choose Color",all_category)
-                        st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
-                        if color != 'none':
-                            line = px.line(data_frame=st.session_state.df, x=column1, y=column2,color=color) 
-                        else:
-                            line = px.line(data_frame=st.session_state.df, x=column1, y=column2) 
-                        st.plotly_chart(line)
-                    all_category.remove('none')
-
-def plot_barChart(str_multi_bar_plotting,num_multi_bar_plotting):
-    all_category = num_category+str_category
-    for i in range(len(str_multi_bar_plotting)):
-                    column1 = str_multi_bar_plotting[i]
-                    for i in range(len(num_multi_bar_plotting)):
-                        column2 = num_multi_bar_plotting[i]
-                        if column2 == 'count':
+    try:
+        if selection == 'Line Chart':
+            for i in range(len(first_plot)):
+                            column1 = first_plot[i]
+                            for i in range(len(second_plot)):
+                                column2 = second_plot[i]
+                                all_category.append('none')
+                                color = st.selectbox("Choose Color",all_category)
+                                st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
+                                if color != 'none':
+                                    line = px.line(data_frame=st.session_state.df, x=column1, y=column2,color=color) 
+                                else:
+                                    line = px.line(data_frame=st.session_state.df, x=column1, y=column2) 
+                                st.plotly_chart(line)
+                            all_category.remove('none')
+        elif selection == 'Bar Chart':
+            for i in range(len(first_plot)):
+                        column1 = first_plot[i]
+                        for i in range(len(second_plot)):
+                            column2 = second_plot[i]
+                            if column2 == 'count':
+                                all_category.append('none')
+                                color = st.selectbox("Choose Color",all_category)
+                                st.markdown("#### Plot for {} and {} columns Colored With {}".format(column1,column2,color))
+                                if color != 'none':  
+                                    histo = px.histogram(data_frame=st.session_state.df,x=column1,color=color)
+                                else:
+                                    histo = px.histogram(data_frame=st.session_state.df,x=column1)    
+                                st.plotly_chart(histo)
+                            else:
+                                str_category.append('none')
+                                index = str_category.index('none')
+                                hue = st.selectbox("input the 3rd column", str_category, index=index)
+                                if hue != 'none':
+                                    st.markdown("#### Bar Plot for {} and {} column, grouped by {}".format(column1,column2,hue))
+                                    bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=hue, barmode='overlay', orientation='v',opacity=1,facet_col=hue)
+                                    st.plotly_chart(bar)
+                                else:      
+                                    st.markdown("#### Bar Plot for {} and {} columns".format(column1,column2))
+                                    bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=column1, barmode='overlay', orientation='v',opacity=1)
+                                    st.plotly_chart(bar)
+                                str_category.remove('none')
+                        num_category.remove('count')
+        elif selection == 'Scatter Chart':
+            for i in range(len(first_plot)):
+                        column1 = first_plot[i]
+                        for i in range(len(second_plot)):
+                            column2 = second_plot[i]
                             all_category.append('none')
                             color = st.selectbox("Choose Color",all_category)
-                            st.markdown("#### Plot for {} and {} columns Colored With {}".format(column1,column2,color))
-                            if color != 'none':  
-                                histo = px.histogram(data_frame=st.session_state.df,x=column1,color=color)
+                            st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
+                            if color == 'none' :
+                                scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2)
+                            else :
+                                scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2, color=color)  
+                            st.plotly_chart(scatter)
+                        all_category.remove('none')
+        elif selection == 'Histogram':
+            for i in range(len(first_plot)):
+                        column1 = first_plot[i]
+                        st.markdown("#### Hist Plot for {} column".format(column1))
+                        histo = px.histogram(data_frame=st.session_state.df,x=column1,color=column1)
+                        histo = px.histogram(data_frame=st.session_state.df,x=column1)
+                        st.plotly_chart(histo)
+        elif selection == 'Pie Chart':
+            for val in first_plot:
+                            d = st.session_state.df[val].value_counts().reset_index()
+                            d.columns = [val,'count']
+                            value = st.selectbox("Enter Names: ", all_category)
+                            st.markdown("#### Pie Plot for {} column".format(val))
+                            if value == 'count':
+                                pie_chart = px.pie(d,values='count', names=val)
                             else:
-                                histo = px.histogram(data_frame=st.session_state.df,x=column1)    
-                            st.plotly_chart(histo)
-                        else:
-                            str_category.append('none')
-                            index = str_category.index('none')
-                            hue = st.selectbox("input the 3rd column", str_category, index=index)
-                            if hue != 'none':
-                                st.markdown("#### Bar Plot for {} and {} column, grouped by {}".format(column1,column2,hue))
-                                bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=hue, barmode='overlay', orientation='v',opacity=1,facet_col=hue)
-                                st.plotly_chart(bar)
-                            else:      
-                                st.markdown("#### Bar Plot for {} and {} columns".format(column1,column2))
-                                bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=column1, barmode='overlay', orientation='v',opacity=1)
-                                st.plotly_chart(bar)
-                            str_category.remove('none')
-                    num_category.remove('count')
-
-def plot_scatterChart(multi_bar_plotting,multi_bar_plotting2):
-    all_category = num_category+str_category
-    for i in range(len(multi_bar_plotting)):
-                    column1 = multi_bar_plotting[i]
-                    for i in range(len(multi_bar_plotting2)):
-                        column2 = multi_bar_plotting2[i]
-                        all_category.append('none')
-                        color = st.selectbox("Choose Color",all_category)
-                        st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
-                        if color == 'none' :
-                            scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2)
-                        else :
-                            scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2, color=color)  
-                        st.plotly_chart(scatter)
-                    all_category.remove('none')
-
-def plot_histogramChart(num_multi_bar_plotting):
-    for i in range(len(num_multi_bar_plotting)):
-                    column1 = num_multi_bar_plotting[i]
-                    st.markdown("#### Hist Plot for {} column".format(column1))
-                    histo = px.histogram(data_frame=st.session_state.df,x=column1,color=column1)
-                    histo = px.histogram(data_frame=st.session_state.df,x=column1)
-                    st.plotly_chart(histo)
-
-def plot_pieChart(values):
-    all_category = num_category+str_category
-    for val in values:
-                        d = st.session_state.df[val].value_counts().reset_index()
-                        d.columns = [val,'count']
-                        
-                        value = st.selectbox("Enter Names: ", all_category)
-                        st.markdown("#### Pie Plot for {} column".format(val))
-                        if value == 'count':
-                            pie_chart = px.pie(d,values='count', names=val)
-                        else:
-                            pie_chart = px.pie(st.session_state.df,values=val, names=value)
-                        st.plotly_chart(pie_chart)
-    all_category.remove('count') 
-
-
+                                pie_chart = px.pie(st.session_state.df,values=val, names=value)
+                            st.plotly_chart(pie_chart)
+            all_category.remove('count')
+        elif selection == 'heatmap':
+            heat_map = px.imshow(st.session_state.df.corr(method=first_plot))
+            st.plotly_chart(heat_map)
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+                
 def handling_missing_values(data:pd.DataFrame, option_type, col_names=None):
     if option_type == "Drop all null value rows":
         droped = data.dropna()

@@ -1,5 +1,5 @@
 import streamlit as st
-from helper import data, seconddata, match_elements, describe, see_outliers, drop_columns, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, data_wrangling, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data,plot_linechart, group_data, delete_outliers, get_query,get_unique,plot_barChart,plot_histogramChart,plot_pieChart,plot_scatterChart
+from helper import data, seconddata, match_elements, describe, see_outliers, drop_columns, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, data_wrangling, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique,plot_Chart
 import plotly.express as px
 import time
 from streamlit_option_menu import option_menu
@@ -158,7 +158,7 @@ try:
                 st.error(f"Error during outlier detection or handling: {e}")
     # ===================================================================================================
         if "Data Pre-processing" in menu:
-            options = st.select('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data"])
+            options = st.selectbox('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data"])
             if "Replace Categorical Values" in options:
                 filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
                 selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
@@ -342,8 +342,9 @@ try:
                 num1_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
                 st.subheader("All Categories")
                 num2_multi_bar_plotting = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
-                plot_linechart(num1_multi_bar_plotting,num2_multi_bar_plotting)
-                      
+                plot_Chart(num1_multi_bar_plotting,selection,num2_multi_bar_plotting)
+
+
             elif selection == 'Bar Chart':
                 num_category.append('count')
                 px.bar()
@@ -351,7 +352,7 @@ try:
                 str_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", str_category)
                 st.subheader("Numeric")
                 num_multi_bar_plotting = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", num_category)
-                plot_barChart(str_multi_bar_plotting,num_multi_bar_plotting)
+                plot_Chart(str_multi_bar_plotting,selection,num_multi_bar_plotting)
                            
             elif selection == 'Scatter Chart':
                 all_category = num_category+str_category
@@ -359,21 +360,21 @@ try:
                 multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
                 st.subheader("All Values")
                 multi_bar_plotting2 = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
-                plot_scatterChart(multi_bar_plotting,multi_bar_plotting2)
+                plot_Chart(multi_bar_plotting,selection,multi_bar_plotting2)
                    
             elif selection == 'Histogram':
                 st.subheader("All Values")
                 num_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
-                plot_histogramChart(num_multi_bar_plotting)
+                plot_Chart(num_multi_bar_plotting,selection)
                
             elif selection == 'Pie Chart':
-                    all_category.append('count')
-                    values = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
-                    plot_pieChart(values)
+                all_category.append('count')
+                values = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
+                plot_Chart(values,selection)
                                
             elif selection == 'heatmap' :
-                heat_map = px.imshow(st.session_state.df.corr())
-                st.plotly_chart(heat_map)        
+                corr_type = st.selectbox('choose the correlation type', options= ['pearson', 'spearman', 'kendall'])
+                plot_Chart(corr_type,selection)       
     # ==========================================================================================================================================
 
         if "Data Wrangling Operations" in menu:
