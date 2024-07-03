@@ -7,155 +7,245 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pandasql import sqldf
-
+import plotly.express as px
 
 excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
 
 
 @st.cache_data()
-def data(data, file_type, seperator=None):
-    if file_type == "csv":
-        data = pd.read_csv(data,parse_dates=True)
-        
-    elif file_type == "json":
-        data = pd.read_json(data)
-    
-    elif file_type in excel_type:
-        data = pd.read_excel(data, parse_dates=True)
-    
-    elif file_type == "plain":
-        try:
-            data = pd.read_table(data, sep=seperator)
-        except ValueError:
-            st.info("If you haven't Type the separator then dont worry about the error this error will go as you type the separator value and hit Enter.")
+def data(file_path, file_type, separator=None):
+    try:
+        if file_type == "csv":
+            data = pd.read_csv(file_path, parse_dates=True)
+        elif file_type == "json":
+            data = pd.read_json(file_path)
+        elif file_type in excel_type:  
+            data = pd.read_excel(file_path, parse_dates=True)
+        elif file_type == "plain":
+            try:
+                data = pd.read_table(file_path, sep=separator)
+            except ValueError:
+                st.info("If you haven't Type the separator then dont worry about the error this error will go as you type the separator value and hit Enter.")
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+        return None
+
+    # Check for unnamed index column
     if 0 in data.columns or 'Unnamed: 0' in data.columns:
         data.set_index(data.columns[0], inplace=True)
+
     return data
+  
 
 @st.cache_data()
-def seconddata(data, file_type, seperator=None):
+def seconddata(file_path, file_type, separator=None):
+    try:
+        if file_type == "csv":
+            data = pd.read_csv(file_path, parse_dates=True)
+        elif file_type == "json":
+            data = pd.read_json(file_path)
+        elif file_type in ["xlsx", "xls"]:  
+            data = pd.read_excel(file_path, parse_dates=True)
+        elif file_type == "plain":
+            try:
+                data = pd.read_table(file_path, sep=separator, delimiter=separator)
+            except ValueError:
+                st.info("If you haven't Type the separator then dont worry about the error this error will go as you type the separator value and hit Enter.")
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+        return None
 
-    if file_type == "csv":
-        data = pd.read_csv(data,parse_dates=True)
-
-    elif file_type == "json":
-        data = pd.read_json(data)
-    
-    elif file_type in excel_type:
-        data = pd.read_excel(data,parse_dates=True)
-    
-    elif file_type == "plain":
-        try:
-            data = pd.read_table(data, sep=seperator, delimiter=seperator)
-        except ValueError:
-            st.info("If you haven't Type the separator then dont worry about the error this error will go as you type the separator value and hit Enter.")
+    # Check for unnamed index column
     if 0 in data.columns or 'Unnamed: 0' in data.columns:
         data.set_index(data.columns[0], inplace=True)
+
     return data
 
-
 def match_elements(list_a, list_b):
-    non_match = []
-    for i in list_a:
-        if i in list_b:
-            non_match.append(i)
-    return non_match
-
+   
+    if not isinstance(list_a, list) or not isinstance(list_b, list):
+        raise ValueError("Both inputs must be lists.")
+    
+    # Using list comprehension for concise and efficient matching
+    matches = [element for element in list_a if element in list_b]
+    return matches
+    """
+    This function takes two lists and returns a list of elements 
+    from list_a that are also present in list_b.
+    """
 
 def download_data(data:pd.DataFrame, label):
-    if not data.empty:
-        current_time = datetime.datetime.now(pytz.timezone('Asia/Kolkata'))
-        current_time = "{}.{}-{}-{}".format(current_time.date(), current_time.hour, current_time.minute, current_time.second)
-        export_data = st.download_button(
-                            label="Download {} data as CSV".format(label),
-                            data=data.to_csv(encoding='utf-8-sig',index=False).encode('utf-8-sig'),
-                            file_name='{}{}.csv'.format(label, current_time),
-                            mime='text/csv',
-                            help = "When You Click On Download Button You can download your {} CSV File".format(label)
-                        )
-        return export_data
+
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError("The data parameter must be a pandas DataFrame.")
+    
+    if not isinstance(label, str):
+        raise ValueError("The label parameter must be a string.")
+    
+    if data.empty:
+        st.warning("The provided DataFrame is empty. Please provide a DataFrame with data.")
+        return None
+
+    # Generate current timestamp 
+    current_time = datetime.datetime.now()
+    timestamp = current_time.strftime("%Y-%m-%d_%H-%M-%S")
+    
+    # Convert DataFrame to CSV and encode it
+    csv_data = data.to_csv(encoding='utf-8-sig', index=False).encode('utf-8-sig') #why use encode twice?
+    
+    # Create and return the download button
+    export_data = st.download_button(
+        label=f"Download {label} data as CSV",
+        data=csv_data,
+        file_name=f"{label}_{timestamp}.csv",
+        mime='text/csv',
+        help=f"When you click on the Download button, you can download your {label} CSV file."
+    )
+
+    return export_data
 
 def get_unique(data:pd.DataFrame):
-    col1,col2,col3,col4 = st.columns(4)
-    i = 1
-    for col_name in data:
-        if i == 1:
-            with col1:
-                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))
-                i+=1
-        elif i == 2:
-            with col2:
-                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))
-                i+=1     
-        elif i == 3:
-            with col3:
-                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))   
-                i+=1
-        elif i == 4:
-            with col4:
-                st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))   
-                i+=1       
-        if i == 5:
-            i = 1
-            col1,col2,col3,col4 = st.columns(4)
+    """
+    Displays unique values of each column in a DataFrame in a 4-column Streamlit layout.
+    """
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError("The data parameter must be a pandas DataFrame.")
+    
+    # Initialize columns
+    columns = st.columns(4)
+    
+    # Iterate through columns and display unique values
+    for i, col_name in enumerate(data.columns):
+        with columns[i % 4]:
+            st.dataframe(data[col_name].drop_duplicates().reset_index(drop=True))
+        
+        # Reset columns after every 4 iterations
+        if (i + 1) % 4 == 0 and (i + 1) != len(data.columns):
+            columns = st.columns(4)
             
              
 def describe(data):
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError("The data parameter must be a pandas DataFrame.")
+    
     global num_category, str_category
+    # Select numeric and categorical data
     numeric_data = data.select_dtypes(include=[np.number])
     categorical_data = data.select_dtypes(exclude=[np.number])
-
-    num_category = [feature for feature in data.columns if data[feature].dtypes != "O"]
-    str_category = [feature for feature in data.columns if data[feature].dtypes == "O"]
+    
+    # Identify numeric and categorical columns
+    num_category = data.select_dtypes(include=[np.number]).columns.tolist()
+    str_category = data.select_dtypes(exclude=[np.number]).columns.tolist()
+    
+    # Identify columns with null values
     column_with_null_values = data.columns[data.isnull().any()]
-    if numeric_data.empty:
-        return None, None, categorical_data.describe() , data.shape, data.columns, num_category, str_category, data.isnull().sum(),data.dtypes.astype("str"), data.nunique(), str_category, column_with_null_values
-    elif categorical_data.empty:
-        return numeric_data.corr(), numeric_data.describe(), None , data.shape, data.columns, num_category, str_category, data.isnull().sum(),data.dtypes.astype("str"), data.nunique(), str_category, column_with_null_values
-    return numeric_data.corr(), numeric_data.describe(), categorical_data.describe() , data.shape, data.columns, num_category, str_category, data.isnull().sum(),data.dtypes.astype("str"), data.nunique(), str_category, column_with_null_values
-        
+    
+    # Descriptive statistics
+    numeric_corr = numeric_data.corr() if not numeric_data.empty else None
+    numeric_desc = numeric_data.describe() if not numeric_data.empty else None
+    categorical_desc = categorical_data.describe() if not categorical_data.empty else None
 
+    most_repeated = {col: numeric_data[col].mode().iloc[0] if not numeric_data[col].mode().empty else None for col in num_category}
+    
+    return (
+        numeric_corr, 
+        numeric_desc, 
+        categorical_desc, 
+        data.shape, 
+        data.columns, 
+        num_category, 
+        str_category, 
+        data.isnull().sum(), 
+        data.dtypes.astype("str"), 
+        data.nunique(), 
+        str_category, 
+        column_with_null_values,
+        most_repeated
+    )
 
 def see_outliers(data, num_category_outliers):
-    plt.figure(figsize=(12,6))
-    flierprops = dict(marker='o', markerfacecolor='purple', markersize=6,
-                    linestyle='none', markeredgecolor='black')
-    column = num_category_outliers
-    box_plot = px.box(data_frame=data, x=column)
-    st.plotly_chart(box_plot)
-    plot = sns.boxplot(x=column, flierprops=flierprops, data=data)
-    fig = plot.get_figure()
-    st.pyplot(fig)
-    return
+    try:
+        if num_category_outliers not in data.columns:
+            st.error(f"Column '{num_category_outliers}' not found in data.")
+            return
+        
+        # Plotting with Plotly
+        box_plot = px.box(data_frame=data, x=num_category_outliers)
+        st.plotly_chart(box_plot)
+
+    except Exception as e:
+        st.error(f"An error occurred while visualizing outliers: {e}")
 
 def delete_outliers(data, col_name): 
-    Q1 = data[col_name].quantile(0.25)
-    Q3 = data[col_name].quantile(0.75)
-    IQR = Q3 - Q1
-    no_outliers = data[(data[col_name] >= Q1 - 1.5 * IQR) & (data[col_name] <= Q3 + 1.5 * IQR)]
-    return no_outliers.reset_index(drop=True)
+    try:
+        if col_name not in data.columns:
+            raise ValueError(f"Column '{col_name}' not found in data.")
+        if not np.issubdtype(data[col_name].dtype, np.number):
+            raise TypeError(f"Column '{col_name}' must be numerical.")
+        
+        # Calculate Q1 (25th percentile) and Q3 (75th percentile)
+        Q1 = data[col_name].quantile(0.25)
+        Q3 = data[col_name].quantile(0.75)
+        IQR = Q3 - Q1  # Interquartile Range
 
+        # Determine the bounds for outliers
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+
+        # Filter out the outliers
+        no_outliers = data[(data[col_name] >= lower_bound) & (data[col_name] <= upper_bound)]
+
+        return no_outliers.reset_index(drop=True)
+    
+    except Exception as e:
+        st.error(f"An error occurred while deleting outliers: {e}")
+        return data  
 
 def replace_categorical(data:pd.DataFrame, selected_column, to_replace, val):
-    replaced = data.copy(deep=True)
-    if val == 'Null':
-        replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)
-    else:        
-        replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val) 
-    replaced[selected_column] = pd.to_numeric(replaced[selected_column], errors='ignore')  
-    return replaced     
+    try:
+        if selected_column not in data.columns:
+            raise ValueError(f"Column '{selected_column}' not found in the data.")
+        if data[selected_column].dtype != 'O':
+            raise TypeError(f"Column '{selected_column}' must be a categorical (object) type.")
 
+        replaced = data.copy(deep=True)
+        # Replace the specified value with the new value or NaN
+        if val == 'Null':
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)
+        else:
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val)
+
+        replaced[selected_column] = pd.to_numeric(replaced[selected_column], errors='ignore')
+        
+        return replaced
+    
+    except Exception as e:
+        st.error(f"An error occurred while replacing values: {e}")
+        return data  
 
 def replace_numeric(data:pd.DataFrame, selected_column, to_replace, val):
-    replaced = data.copy(deep=True)
-    if val == -1:
-        replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)  
-    else:        
-        replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val)
-    replaced[selected_column] = pd.to_numeric(replaced[selected_column], errors='ignore')   
-    return replaced
+    try:
+        if selected_column not in data.columns:
+            raise ValueError(f"Column '{selected_column}' not found in the data.")
+        if not pd.api.types.is_numeric_dtype(data[selected_column]):
+            raise TypeError(f"Column '{selected_column}' must be a numeric type.")
+        
+        replaced = data.copy(deep=True)
+        # Replace the specified value with the new value or NaN
+        if val == -1:
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=np.nan)
+        else:
+            replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val)
+        
+        replaced[selected_column] = pd.to_numeric(replaced[selected_column], errors='ignore') #why?
+        
+        return replaced
+    
+    except Exception as e:
+        st.error(f"An error occurred while replacing values: {e}")
+        return data  
 
-def drop_items(data, selected_name):
+def drop_columns(data, selected_name):
     droped =  data.drop(selected_name, axis = 1)
     return droped
 
@@ -183,7 +273,93 @@ def rename_columns(data, column_names):
     rename_column = data.rename(columns=column_names)
     return rename_column
 
-
+def plot_Chart(selection):
+    all_category = num_category + str_category
+    try:
+        if selection == 'Line Chart':
+            st.subheader("All Catgeories")
+            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
+            st.subheader("All Categories")
+            column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
+            all_category.append('none')
+            color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
+            st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
+            if color != 'none':
+                line = px.line(data_frame=st.session_state.df, x=column1, y=column2,color=color) 
+            else:
+                line = px.line(data_frame=st.session_state.df, x=column1, y=column2) 
+            st.plotly_chart(line)
+            all_category.remove('none')
+        elif selection == 'Bar Chart':
+            num_category.append('count')
+            st.subheader("Categories")
+            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", str_category)
+            st.subheader("Numeric")
+            column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", num_category)
+            if column2 == 'count':
+                all_category.append('none')
+                color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
+                st.markdown("#### Plot for {} and {} columns Colored With {}".format(column1,column2,color))
+                if color != 'none':  
+                    histo = px.histogram(data_frame=st.session_state.df,x=column1,color=color)
+                else:
+                    histo = px.histogram(data_frame=st.session_state.df,x=column1)    
+                st.plotly_chart(histo)
+            else:
+                str_category.append('none')
+                index = str_category.index('none')
+                hue = st.selectbox("input the 3rd column", str_category, index=index)
+                if hue != 'none':
+                    st.markdown("#### Bar Plot for {} and {} column, grouped by {}".format(column1,column2,hue))
+                    bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=hue, barmode='overlay', orientation='v',opacity=1,facet_col=hue)
+                    st.plotly_chart(bar)
+                else:      
+                    st.markdown("#### Bar Plot for {} and {} columns".format(column1,column2))
+                    bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, barmode='overlay', orientation='v',opacity=1)
+                    st.plotly_chart(bar)
+                str_category.remove('none')
+            all_category.remove('none')    
+            num_category.remove('count')
+        elif selection == 'Scatter Chart':
+            st.subheader("All Values")
+            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
+            st.subheader("All Values")
+            column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
+            all_category.append('none')
+            color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
+            st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
+            if color == 'none' :
+                scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2)
+            else :
+                scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2, color=color)  
+            st.plotly_chart(scatter)
+            all_category.remove('none')
+        elif selection == 'Histogram':
+            st.subheader("All Values")
+            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
+            st.markdown("#### Hist Plot for {} column".format(column1))
+            histo = px.histogram(data_frame=st.session_state.df,x=column1)
+            st.plotly_chart(histo)
+        elif selection == 'Pie Chart':
+            all_category.append('count')
+            val = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
+            d = st.session_state.df[val].value_counts().reset_index()
+            d.columns = [val,'count']
+            value = st.selectbox("Enter Names: ", all_category)
+            st.markdown("#### Pie Plot for {} column".format(val))
+            if value == 'count':
+                pie_chart = px.pie(d,values='count', names=val)
+            else:
+                pie_chart = px.pie(st.session_state.df,values=val, names=value)
+            st.plotly_chart(pie_chart)
+            all_category.remove('count')
+        elif selection == 'heatmap':
+            corr_type = st.selectbox('choose the correlation type', options= ['pearson', 'spearman', 'kendall'])
+            heat_map = px.imshow(st.session_state.df.corr(method=corr_type))
+            st.plotly_chart(heat_map)
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+                
 def handling_missing_values(data:pd.DataFrame, option_type, col_names=None):
     if option_type == "Drop all null value rows":
         droped = data.dropna()
@@ -219,12 +395,31 @@ def data_wrangling(data1, data2=None, key=None, usertype=None):
     return data
 
 def group_data(data:pd.DataFrame, col_names, group_type, col_name=None):
+    #todo
     if group_type == "mean":
-        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].mean().round()
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].mean().round(2)
     elif group_type == "median":
-        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].median().round()
-    elif group_type == "des":
-        grouped = data.groupby([col for col in col_names]).count()
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].median().round(2)
+    elif group_type == 'count':
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].count()
+    elif group_type == 'max':
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].max()
+    elif group_type == 'min':
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].min()
+    elif group_type == 'standard deviation':
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].std()
+    elif group_type == '1st quartile':
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].quantile(0.25)
+    elif group_type == '3rd qurtile':
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].quantile(0.75)
+    elif group_type == 'normal':
+        grouped = data.groupby([col for col in col_names])
+        normal_grouping = pd.DataFrame()
+        for creteria, rows in grouped:
+            if normal_grouping.empty:
+                normal_grouping = pd.DataFrame(data=rows)
+            normal_grouping = pd.concat([normal_grouping,rows])
+        return normal_grouping.reset_index()
     return grouped
 
 def clear_image_cache():
