@@ -45,8 +45,8 @@ try:
         with st.sidebar:
             menu = option_menu(
             "Operations", 
-            ["Overview", "Outlier Detection", "Data Visualization", "Data Pre-processing", "Data Wrangling Operations", "Execute Custom Queries"], 
-            icons=["house", "exclamation-circle", "pie-chart", "filter", "tools", "search"],
+            ["Overview", "Outlier Detection", "Data Visualization", "Data Pre-processing", "Group By", "Execute Custom Queries"], 
+            icons=["layout-text-sidebar-reverse", "exclamation-circle", "pie-chart-fill", "filter", "columns-gap", "search"],
             menu_icon="cast", 
             default_index=0,
          )
@@ -158,7 +158,7 @@ try:
                 st.error(f"Error during outlier detection or handling: {e}")
     # ===================================================================================================
         if "Data Pre-processing" in menu:
-            options = st.selectbox('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data"])
+            options = st.selectbox('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data","Join Tabels"])
             if "Replace Categorical Values" in options:
                 filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
                 selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
@@ -331,56 +331,7 @@ try:
                         if st.button("Apply Changes", help="Takes your data and Fill NaN Values for columns as your wish."):
                             st.session_state.df = filled_values   
                             st.rerun()    
-
-    # ===================================================================================================================
-    
-        if "Data Visualization" in menu:
-            all_category = num_category+str_category
-            selection = st.selectbox("Select The Type of Chart", ['Line Chart','Bar Chart','Histogram','Scatter Chart','Pie Chart', 'heatmap'])
-            if selection == 'Line Chart':
-                st.subheader("All Catgeories")
-                num1_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
-                st.subheader("All Categories")
-                num2_multi_bar_plotting = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
-                plot_Chart(num1_multi_bar_plotting,selection,num2_multi_bar_plotting)
-
-
-            elif selection == 'Bar Chart':
-                num_category.append('count')
-                px.bar()
-                st.subheader("Categories")
-                str_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", str_category)
-                st.subheader("Numeric")
-                num_multi_bar_plotting = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", num_category)
-                plot_Chart(str_multi_bar_plotting,selection,num_multi_bar_plotting)
-                           
-            elif selection == 'Scatter Chart':
-                all_category = num_category+str_category
-                st.subheader("All Values")
-                multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
-                st.subheader("All Values")
-                multi_bar_plotting2 = st.multiselect("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
-                plot_Chart(multi_bar_plotting,selection,multi_bar_plotting2)
-                   
-            elif selection == 'Histogram':
-                st.subheader("All Values")
-                num_multi_bar_plotting = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
-                plot_Chart(num_multi_bar_plotting,selection)
-               
-            elif selection == 'Pie Chart':
-                all_category.append('count')
-                values = st.multiselect("Enter Name or Select the Column which you Want To Plot: ", all_category)
-                plot_Chart(values,selection)
-                               
-            elif selection == 'heatmap' :
-                corr_type = st.selectbox('choose the correlation type', options= ['pearson', 'spearman', 'kendall'])
-                plot_Chart(corr_type,selection)       
-    # ==========================================================================================================================================
-
-        if "Data Wrangling Operations" in menu:
-            data_wrangling_option = st.radio("Choose your option as suted: ", ("Merging On Index", "Concatenating On Axis", "Group By Columns"))
-
-            if data_wrangling_option == "Merging On Index":
+            elif "Join Tabels" in options:
                 data_wrangling_merging_uploaded_file = st.file_uploader("Upload Your Second file you want to merge", type=file_format_type)
 
                 if data_wrangling_merging_uploaded_file is not None:
@@ -389,35 +340,33 @@ try:
                     same_columns = match_elements(data, second_data)
                     merge_key_selector = st.selectbox("Select A Comlumn by which you want to merge on two Dataset", options=same_columns)
                     
-                    merge_data = data_wrangling(data, second_data, merge_key_selector, data_wrangling_option)
+                    merge_data = data_wrangling(data, second_data, merge_key_selector, options)
                     st.write(merge_data)
                     if st.button("Apply Changes"):
                         st.session_state.df = merge_data
                         st.rerun()
 
-            if data_wrangling_option == "Concatenating On Axis":
+    # ===================================================================================================================
+    
+        if "Data Visualization" in menu:
+            all_category = num_category+str_category
+            selection = st.selectbox("Select The Type of Chart", ['Line Chart','Bar Chart','Histogram','Scatter Chart','Pie Chart', 'heatmap'])
+            plot_Chart(selection)    
+    # ==========================================================================================================================================
 
-                data_wrangling_concatenating_uploaded_file = st.file_uploader("Upload Your Second file you want to Concatenate", type=file_format_type)
+        if "Group By" in menu:
 
-                if data_wrangling_concatenating_uploaded_file is not None:
-
-                    second_data = seconddata(data_wrangling_concatenating_uploaded_file, file_type=data_wrangling_concatenating_uploaded_file.type.split("/")[1])
-                    concatenating_data = data_wrangling(st.session_state.df, second_data, None, data_wrangling_option)
-                    st.write(concatenating_data)
-                    if st.button("Apply Changes"):
-                        st.session_state.df = concatenating_data
-                        st.rerun()
-            
-            
-            if data_wrangling_option == "Group By Columns":
-                group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=st.session_state.df.columns)
-                if group_by_columns != []:
-                    group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median','des'])
-                    if group_type != '':
+            group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=st.session_state.df.columns)
+            if group_by_columns != []:
+                group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median','count','max','min','standard deviation','1st quartile','3rd quartile','normal'])
+                if group_type != '':
+                    if group_type != 'normal':
                         cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
                         grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
-                        st.dataframe(grouped_data)
-                        download_data(grouped_data, label="Download Grouped Data")
+                    else:
+                        grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type)        
+                    st.dataframe(grouped_data)
+                    download_data(grouped_data, label=" Grouped")
 
      # ==========================================================================================================================================   
         if "Execute Custom Queries" in menu:
