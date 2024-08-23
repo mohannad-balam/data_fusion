@@ -23,6 +23,8 @@ try:
 
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
 
+    if uploaded_file is None : 
+        st.header("Welcome to DataFusion")
     if uploaded_file is not None:
         
         #start_time = time.time()
