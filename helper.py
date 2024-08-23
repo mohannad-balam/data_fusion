@@ -267,8 +267,8 @@ def num_filter_data(data, start_value, end_value, column, param):
     return num_filtered_data.reset_index(drop=True)
 
 
-def rename_columns(data, column_names):
-    rename_column = data.rename(columns=column_names)
+def rename_columns(data:pd.DataFrame, column_name):
+    rename_column = data.rename(columns=column_name)
     return rename_column
 
 def plot_Chart(selection):
@@ -281,7 +281,7 @@ def plot_Chart(selection):
             column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
             all_category.append('none')
             color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
-            st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
+            st.markdown("#### Line Chart for {} and {} columns Gouped By {}".format(column1,column2,color))
             if color != 'none':
                 line = px.line(data_frame=st.session_state.df, x=column1, y=column2,color=color) 
             else:
@@ -297,7 +297,7 @@ def plot_Chart(selection):
             if column2 == 'count':
                 all_category.append('none')
                 color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
-                st.markdown("#### Plot for {} and {} columns Colored With {}".format(column1,column2,color))
+                st.markdown("#### Bar Chart for {} and {} columns Colored With {}".format(column1,column2,color))
                 if color != 'none':  
                     histo = px.histogram(data_frame=st.session_state.df,x=column1,color=color)
                 else:
@@ -308,11 +308,11 @@ def plot_Chart(selection):
                 index = str_category.index('none')
                 hue = st.selectbox("input the 3rd column", str_category, index=index)
                 if hue != 'none':
-                    st.markdown("#### Bar Plot for {} and {} column, grouped by {}".format(column1,column2,hue))
+                    st.markdown("#### Bar chart for {} and {} column, grouped by {}".format(column1,column2,hue))
                     bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=hue, barmode='overlay', orientation='v',opacity=1,facet_col=hue)
                     st.plotly_chart(bar)
                 else:      
-                    st.markdown("#### Bar Plot for {} and {} columns".format(column1,column2))
+                    st.markdown("#### Bar chart for {} and {} columns".format(column1,column2))
                     bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, barmode='overlay', orientation='v',opacity=1)
                     st.plotly_chart(bar)
                 str_category.remove('none')
@@ -325,7 +325,7 @@ def plot_Chart(selection):
             column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
             all_category.append('none')
             color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
-            st.markdown("#### Bar Plot for {} and {} columns colored with {}".format(column1,column2,color))
+            st.markdown("#### Satter Chart for {} and {} columns colored with {}".format(column1,column2,color))
             if color == 'none' :
                 scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2)
             else :
@@ -339,18 +339,18 @@ def plot_Chart(selection):
             histo = px.histogram(data_frame=st.session_state.df,x=column1)
             st.plotly_chart(histo)
         elif selection == 'Pie Chart':
-            all_category.append('count')
+            #all_category.append('count')
             val = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
             d = st.session_state.df[val].value_counts().reset_index()
             d.columns = [val,'count']
-            value = st.selectbox("Enter Names: ", all_category)
-            st.markdown("#### Pie Plot for {} column".format(val))
-            if value == 'count':
-                pie_chart = px.pie(d,values='count', names=val)
-            else:
-                pie_chart = px.pie(st.session_state.df,values=val, names=value)
+            #value = st.selectbox("Enter Names: ", all_category)
+            st.markdown("#### Pie Chart for {} column".format(val))
+            #if value == 'count':
+            pie_chart = px.pie(d,values='count', names=val)
+            # else:
+            #     pie_chart = px.pie(st.session_state.df,values=val, names=value)
             st.plotly_chart(pie_chart)
-            all_category.remove('count')
+            #all_category.remove('count')
         elif selection == 'heatmap':
             corr_type = st.selectbox('choose the correlation type', options= ['pearson', 'spearman', 'kendall'])
             heat_map = px.imshow(st.session_state.df.corr(method=corr_type))

@@ -7,7 +7,7 @@ from streamlit_option_menu import option_menu
 try:
     
     st.set_page_config(
-        page_title="Tabular Data Analyzer",
+        page_title="Data Fusion",
         page_icon="🧊",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -16,7 +16,7 @@ try:
         }
     )
 
-    st.sidebar.title("Tabular Data Analyzer")
+    st.sidebar.title("Data Fusion")
 
     file_format_type = ["csv", "txt", "xls", "xlsx", "ods", "odt", "json"]
     excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
@@ -25,7 +25,7 @@ try:
 
     if uploaded_file is not None:
         
-        start_time = time.time()
+        #start_time = time.time()
         file_type = uploaded_file.type.split("/")[1]
         
         if file_type == "plain":
@@ -37,7 +37,7 @@ try:
         else:
             data = data(uploaded_file, file_type)
             
-        end_time = time.time() - start_time   
+        #end_time = time.time() - start_time   
         
         if 'df' not in st.session_state:
             st.session_state.df = data.copy(deep=True)
@@ -49,7 +49,7 @@ try:
             icons=["layout-text-sidebar-reverse", "exclamation-circle", "pie-chart-fill", "filter", "columns-gap", "search"],
             menu_icon="cast", 
             default_index=0,
-         )
+        )
 
         correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category,column_with_null_values,most_repeated = describe(st.session_state.df)
                 
@@ -61,6 +61,7 @@ try:
         with st.expander("Edited Dataset"):
             if st.button("Reset Data"):
                 st.session_state.df = data.copy(deep=True)
+                st.rerun()
             st.subheader("Edited Dataset Preview")        
             st.dataframe(st.session_state.df)    
             st.text(" ")
@@ -196,8 +197,8 @@ try:
                     st.rerun()
             
             elif "Drop Categorical Rows" in options:
-                try:
-                    filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=st.session_state.df.columns)
+                try: #st.session_state.df.columns
+                    filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
                     
                     if filter_column_selection not in st.session_state.df.columns:
                         raise ValueError(f"Selected column '{filter_column_selection}' is not in the DataFrame")
@@ -275,13 +276,14 @@ try:
                 rename_text_data = st.text_input("Enter the New Name for the {} column".format(rename_column_selector), max_chars=50)
 
 
-                if st.button("Draft Changes", help="when you want to rename multiple columns/single column  so first you have to click Save Draft button this updates the data and then press Rename Columns Button."):
-                    st.session_state.rename_dict[rename_column_selector] = rename_text_data
-                st.code(st.session_state.rename_dict)
+                # if st.button("Draft Changes", help="when you want to rename multiple columns/single column  so first you have to click Save Draft button this updates the data and then press Rename Columns Button."):
+                #     st.session_state.rename_dict[rename_column_selector] = rename_text_data
+                # st.code(st.session_state.rename_dict)
 
                 if st.button("Apply Changes", help="Takes your data and rename the column as your wish."):
+                    st.session_state.rename_dict[rename_column_selector] = rename_text_data
                     st.session_state.df = rename_columns(st.session_state.df, st.session_state.rename_dict)
-                    st.write(st.session_state.df)
+                    #st.write(st.session_state.df)
                     st.session_state.rename_dict = {}
                     st.rerun()
             
@@ -383,7 +385,7 @@ try:
         export = download_data(st.session_state.df, label="Edited")
     # ==========================================================================================================================================
 
-    st.code("Processed time is : " + str(end_time.__round__(2)) + " seconds")
+    #st.code("Processed time is : " + str(end_time.__round__(2)) + " seconds")
     
 except Exception as e:
     st.warning(e)
