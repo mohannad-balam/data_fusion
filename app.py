@@ -7,7 +7,7 @@ from streamlit_option_menu import option_menu
 try:
     
     st.set_page_config(
-        page_title="Tabular Data Analyzer",
+        page_title="Data Fusion",
         page_icon="🧊",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -16,7 +16,7 @@ try:
         }
     )
 
-    st.sidebar.title("Tabular Data Analyzer")
+    st.sidebar.title("Data Fusion")
 
     file_format_type = ["csv", "txt", "xls", "xlsx", "ods", "odt", "json"]
     excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
@@ -25,7 +25,7 @@ try:
 
     if uploaded_file is not None:
         
-        start_time = time.time()
+        #start_time = time.time()
         file_type = uploaded_file.type.split("/")[1]
         
         if file_type == "plain":
@@ -37,7 +37,7 @@ try:
         else:
             data = data(uploaded_file, file_type)
             
-        end_time = time.time() - start_time   
+        #end_time = time.time() - start_time   
         
         if 'df' not in st.session_state:
             st.session_state.df = data.copy(deep=True)
@@ -45,11 +45,11 @@ try:
         with st.sidebar:
             menu = option_menu(
             "Operations", 
-            ["Overview", "Outlier Detection", "Data Visualization", "Data Pre-processing", "Data Wrangling Operations", "Execute Custom Queries"], 
-            icons=["house", "exclamation-circle", "pie-chart", "filter", "tools", "search"],
+            ["Overview", "Outlier Detection", "Data Visualization", "Data Pre-processing", "Group By", "Execute Custom Queries"], 
+            icons=["layout-text-sidebar-reverse", "exclamation-circle", "pie-chart-fill", "filter", "columns-gap", "search"],
             menu_icon="cast", 
             default_index=0,
-         )
+        )
 
         correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category,column_with_null_values,most_repeated = describe(st.session_state.df)
                 
@@ -61,6 +61,7 @@ try:
         with st.expander("Edited Dataset"):
             if st.button("Reset Data"):
                 st.session_state.df = data.copy(deep=True)
+                st.rerun()
             st.subheader("Edited Dataset Preview")        
             st.dataframe(st.session_state.df)    
             st.text(" ")
@@ -158,7 +159,7 @@ try:
                 st.error(f"Error during outlier detection or handling: {e}")
     # ===================================================================================================
         if "Data Pre-processing" in menu:
-            options = st.selectbox('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data"])
+            options = st.selectbox('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data","Join Tabels"])
             if "Replace Categorical Values" in options:
                 filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
                 selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
@@ -196,8 +197,8 @@ try:
                     st.rerun()
             
             elif "Drop Categorical Rows" in options:
-                try:
-                    filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=st.session_state.df.columns)
+                try: #st.session_state.df.columns
+                    filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
                     
                     if filter_column_selection not in st.session_state.df.columns:
                         raise ValueError(f"Selected column '{filter_column_selection}' is not in the DataFrame")
@@ -275,13 +276,14 @@ try:
                 rename_text_data = st.text_input("Enter the New Name for the {} column".format(rename_column_selector), max_chars=50)
 
 
-                if st.button("Draft Changes", help="when you want to rename multiple columns/single column  so first you have to click Save Draft button this updates the data and then press Rename Columns Button."):
-                    st.session_state.rename_dict[rename_column_selector] = rename_text_data
-                st.code(st.session_state.rename_dict)
+                # if st.button("Draft Changes", help="when you want to rename multiple columns/single column  so first you have to click Save Draft button this updates the data and then press Rename Columns Button."):
+                #     st.session_state.rename_dict[rename_column_selector] = rename_text_data
+                # st.code(st.session_state.rename_dict)
 
                 if st.button("Apply Changes", help="Takes your data and rename the column as your wish."):
+                    st.session_state.rename_dict[rename_column_selector] = rename_text_data
                     st.session_state.df = rename_columns(st.session_state.df, st.session_state.rename_dict)
-                    st.write(st.session_state.df)
+                    #st.write(st.session_state.df)
                     st.session_state.rename_dict = {}
                     st.rerun()
             
@@ -331,6 +333,20 @@ try:
                         if st.button("Apply Changes", help="Takes your data and Fill NaN Values for columns as your wish."):
                             st.session_state.df = filled_values   
                             st.rerun()    
+            elif "Join Tabels" in options:
+                data_wrangling_merging_uploaded_file = st.file_uploader("Upload Your Second file you want to merge", type=file_format_type)
+
+                if data_wrangling_merging_uploaded_file is not None:
+
+                    second_data = seconddata(data_wrangling_merging_uploaded_file, file_type=data_wrangling_merging_uploaded_file.type.split("/")[1])
+                    same_columns = match_elements(data, second_data)
+                    merge_key_selector = st.selectbox("Select A Comlumn by which you want to merge on two Dataset", options=same_columns)
+                    
+                    merge_data = data_wrangling(data, second_data, merge_key_selector, options)
+                    st.write(merge_data)
+                    if st.button("Apply Changes"):
+                        st.session_state.df = merge_data
+                        st.rerun()
 
     # ===================================================================================================================
     
@@ -340,50 +356,19 @@ try:
             plot_Chart(selection)    
     # ==========================================================================================================================================
 
-        if "Data Wrangling Operations" in menu:
-            data_wrangling_option = st.radio("Choose your option as suted: ", ("Merging On Index", "Concatenating On Axis", "Group By Columns"))
+        if "Group By" in menu:
 
-            if data_wrangling_option == "Merging On Index":
-                data_wrangling_merging_uploaded_file = st.file_uploader("Upload Your Second file you want to merge", type=file_format_type)
-
-                if data_wrangling_merging_uploaded_file is not None:
-
-                    second_data = seconddata(data_wrangling_merging_uploaded_file, file_type=data_wrangling_merging_uploaded_file.type.split("/")[1])
-                    same_columns = match_elements(data, second_data)
-                    merge_key_selector = st.selectbox("Select A Comlumn by which you want to merge on two Dataset", options=same_columns)
-                    
-                    merge_data = data_wrangling(data, second_data, merge_key_selector, data_wrangling_option)
-                    st.write(merge_data)
-                    if st.button("Apply Changes"):
-                        st.session_state.df = merge_data
-                        st.rerun()
-
-            if data_wrangling_option == "Concatenating On Axis":
-
-                data_wrangling_concatenating_uploaded_file = st.file_uploader("Upload Your Second file you want to Concatenate", type=file_format_type)
-
-                if data_wrangling_concatenating_uploaded_file is not None:
-
-                    second_data = seconddata(data_wrangling_concatenating_uploaded_file, file_type=data_wrangling_concatenating_uploaded_file.type.split("/")[1])
-                    concatenating_data = data_wrangling(st.session_state.df, second_data, None, data_wrangling_option)
-                    st.write(concatenating_data)
-                    if st.button("Apply Changes"):
-                        st.session_state.df = concatenating_data
-                        st.rerun()
-            
-            
-            if data_wrangling_option == "Group By Columns":
-                group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=st.session_state.df.columns)
-                if group_by_columns != []:
-                    group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median','count','max','min','standard deviation','1st quartile','3rd quartile','normal'])
-                    if group_type != '':
-                        if group_type != 'normal':
-                            cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
-                            grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
-                        else:
-                            grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type)        
-                        st.dataframe(grouped_data)
-                        download_data(grouped_data, label="Download Grouped Data")
+            group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=st.session_state.df.columns)
+            if group_by_columns != []:
+                group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median','count','max','min','standard deviation','1st quartile','3rd quartile','normal'])
+                if group_type != '':
+                    if group_type != 'normal':
+                        cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
+                        grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
+                    else:
+                        grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type)        
+                    st.dataframe(grouped_data)
+                    download_data(grouped_data, label=" Grouped")
 
      # ==========================================================================================================================================   
         if "Execute Custom Queries" in menu:
@@ -400,7 +385,7 @@ try:
         export = download_data(st.session_state.df, label="Edited")
     # ==========================================================================================================================================
 
-    st.code("Processed time is : " + str(end_time.__round__(2)) + " seconds")
+    #st.code("Processed time is : " + str(end_time.__round__(2)) + " seconds")
     
 except Exception as e:
     st.warning(e)
