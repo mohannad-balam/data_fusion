@@ -10,8 +10,6 @@ from pandasql import sqldf
 import plotly.express as px
 
 excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
-
-
 @st.cache_data()
 def data(file_path, file_type, separator=None):
     try:
