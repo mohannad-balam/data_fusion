@@ -23,24 +23,26 @@ try:
     file_format_type = ["csv", "txt", "xls", "xlsx", "ods", "odt", "json"]
     excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
 
-    data = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
-    data = pd.read_csv('Titanic-Dataset.csv')
+    uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
+    # st.code(uploaded_file)
+    # uploaded_file = pd.read_csv('Titanic-Dataset.csv')
     #st.code(uploaded_file)
-    if data is None : 
+    if uploaded_file is None : 
         st.header("Welcome to DataFusion")
-    if data is not None:
+        st.subheader("Upload a Dataset To Start Exploring")
+    if uploaded_file is not None:
         
         #start_time = time.time()
-        # file_type = uploaded_file.type.split("/")[1]
+        file_type = uploaded_file.type.split("/")[1]
         
-        # if file_type == "plain":
-        #     seperator = st.sidebar.text_input("Please Enter what seperates your data: ", max_chars=5) 
-        #     data = data(uploaded_file, file_type,seperator)
+        if file_type == "plain":
+            seperator = st.sidebar.text_input("Please Enter what seperates your data: ", max_chars=5) 
+            data = data(uploaded_file, file_type,seperator)
             
-        # elif file_type in excel_type:
-        #     data = data(uploaded_file, file_type)
-        # else:
-        #     data = data(uploaded_file, file_type)
+        elif file_type in excel_type:
+            data = data(uploaded_file, file_type)
+        else:
+            data = data(uploaded_file, file_type)
             
         #end_time = time.time() - start_time   
         
@@ -105,11 +107,11 @@ try:
             with col1:
                 st.text("Basic Information")
                 st.write("Dataset Name")
-                #st.text(uploaded_file.name)
+                st.text(uploaded_file.name)
 
                 st.write("Dataset Size(MB)")
-                #number = round((uploaded_file.size*0.000977)*0.000977,2)
-                #st.write(number)
+                number = round((uploaded_file.size*0.000977)*0.000977,2)
+                st.write(number)
 
                 st.write("Dataset Shape")
                 st.write(shape)
