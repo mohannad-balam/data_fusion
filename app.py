@@ -122,11 +122,11 @@ try:
             
             with col3:
                 st.text("Numeric Columns")
-                st.dataframe(num_category)
+                st.dataframe(num_category, hide_index= False)
             
             with col4:
                 st.text("Categorical Columns")
-                st.dataframe(str_category)
+                st.dataframe(str_category, hide_index=False)
     
             col5, col6, col7, col8= st.columns(4)
 
