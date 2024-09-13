@@ -4,7 +4,7 @@ import plotly.express as px
 import pandas as pd
 import seaborn as sns
 import time
-from streamlit_option_menu import option_menu
+from streamlit_option_menu import option_menu 
 
 try:
     
@@ -24,9 +24,7 @@ try:
     excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
 
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
-    # st.code(uploaded_file)
-    # uploaded_file = pd.read_csv('Titanic-Dataset.csv')
-    #st.code(uploaded_file)
+    
     if uploaded_file is None : 
         st.header("Welcome to DataFusion")
         st.subheader("Upload a Dataset To Start Exploring")
@@ -128,13 +126,13 @@ try:
                 st.text("Categorical Columns")
                 st.dataframe(str_category, hide_index=False)
     
-            col5, col6, col7, col8= st.columns(4)
+            col5, col6, col7= st.columns(3)
 
-            with col6:
-                st.text("Columns Data-Type")
-                st.dataframe(dtypes)
+            # with col6:
+            #     st.text("Columns Data-Type")
+            #     st.dataframe(dtypes)
             
-            with col7:
+            with col6:
                 st.text("Counted Unique Values")
                 st.write(unique)
             
@@ -142,7 +140,7 @@ try:
                 st.write("Counted Null Values")
                 st.dataframe(null_values)
             
-            with col8:
+            with col7:
                 st.write("Most Repeated")
                 st.dataframe(most_repeated)
             
@@ -156,12 +154,12 @@ try:
             try:
                 outliers_selection = st.selectbox("Enter or select Name of the columns to see Outliers:", num_category)
                 outliers = see_outliers(st.session_state.df, outliers_selection)
-                decisison = st.selectbox('What To do with the outliers ?',['Delete Outliers'])
-                if decisison == 'Delete Outliers':
+                # decisison = st.selectbox('What To do with the outliers ?',['Delete Outliers'])
+                if st.button('Delete Outliers'):
                     no_outliers = delete_outliers(st.session_state.df, outliers_selection)
-                    if st.button('Apply Changes'):
-                        st.session_state.df = no_outliers
-                        st.rerun()
+                    # if st.button('Apply Changes'):
+                    st.session_state.df = no_outliers
+                    st.rerun()
             except Exception as e:
                 st.error(f"Error during outlier detection or handling: {e}")
     # ===================================================================================================
@@ -372,22 +370,25 @@ try:
                     if group_type != 'normal':
                         cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
                         grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
+                        st.dataframe(grouped_data)
+                        # download_data(grouped_data, label=" Grouped")
                     else:
                         grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type)        
-                    st.dataframe(grouped_data)
-                    download_data(grouped_data, label=" Grouped")
+                        st.dataframe(grouped_data)
+                        download_data(grouped_data, label=" Grouped")
 
      # ==========================================================================================================================================   
         if "Execute Custom Queries" in menu:
             st.header("Custom Queries")
             query_type = st.selectbox("Query Type",['Pure Python','SQL'])
             query = st.text_input("Type Your Query Here", help='ex : Age < 35')
-            result = get_query(data=st.session_state.df,query=query,query_type=query_type)
-            st.subheader("Query Result")
-            st.dataframe(result)
-            if st.button("Apply Changes"):
-                st.session_state.df = result
-                st.rerun()
+            if query != '':
+                result = get_query(data=st.session_state.df,query=query,query_type=query_type)
+                st.subheader("Query Result")
+                st.dataframe(result)
+                if st.button("Apply Changes"):
+                    st.session_state.df = result
+                    st.rerun()
                 # download_data(result, label="Download Query Data")      
         export = download_data(st.session_state.df, label="Edited")
     # ==========================================================================================================================================

@@ -323,19 +323,27 @@ def plot_Chart(selection):
             column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
             all_category.append('none')
             color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
-            st.markdown("#### Satter Chart for {} and {} columns colored with {}".format(column1,column2,color))
             if color == 'none' :
+                st.markdown("#### Satter Chart for {} and {} columns".format(column1,column2))
                 scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2)
             else :
+                st.markdown("#### Satter Chart for {} and {} columns grouped by {}".format(column1,column2,color))
                 scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2, color=color)  
             st.plotly_chart(scatter)
             all_category.remove('none')
         elif selection == 'Histogram':
             st.subheader("All Values")
             column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
-            st.markdown("#### Hist Plot for {} column".format(column1))
-            histo = px.histogram(data_frame=st.session_state.df,x=column1)
+            str_category.append('none')
+            color = st.selectbox("Choose Color",str_category,index=str_category.index('none'))
+            if color == 'none':
+                st.markdown("#### Hist Plot for {} column".format(column1))
+                histo = px.histogram(data_frame=st.session_state.df,x=column1)
+            else:
+                st.markdown("#### Hist Plot for {} column grouped by {}".format(column1,color))
+                histo = px.histogram(data_frame=st.session_state.df,x=column1,color=color)
             st.plotly_chart(histo)
+            str_category.remove('none')      
         elif selection == 'Pie Chart':
             #all_category.append('count')
             val = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
