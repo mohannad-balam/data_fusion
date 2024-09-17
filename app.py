@@ -1,5 +1,5 @@
 import streamlit as st
-from helper import data, seconddata, match_elements, describe, see_outliers, drop_columns, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, data_wrangling, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique,plot_Chart
+from helper import data, seconddata, match_elements, describe, see_outliers, drop_columns, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, merge, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique,plot_Chart
 import plotly.express as px
 import pandas as pd
 import seaborn as sns
@@ -141,7 +141,7 @@ try:
                 st.dataframe(null_values)
             
             with col7:
-                st.write("Most Repeated")
+                st.write("Most Frequent Values")
                 st.dataframe(most_repeated)
             
             st.write("Correlation")
@@ -150,21 +150,18 @@ try:
     # ==================================================================================================
         if "Outlier Detection" in menu:
             st.subheader("Outlier Detection")
-
             try:
                 outliers_selection = st.selectbox("Enter or select Name of the columns to see Outliers:", num_category)
                 outliers = see_outliers(st.session_state.df, outliers_selection)
-                # decisison = st.selectbox('What To do with the outliers ?',['Delete Outliers'])
                 if st.button('Delete Outliers'):
                     no_outliers = delete_outliers(st.session_state.df, outliers_selection)
-                    # if st.button('Apply Changes'):
                     st.session_state.df = no_outliers
                     st.rerun()
             except Exception as e:
                 st.error(f"Error during outlier detection or handling: {e}")
     # ===================================================================================================
         if "Data Pre-processing" in menu:
-            options = st.selectbox('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data","Join Tabels"])
+            options = st.selectbox('Pre-processing operations:', ["Replace Categorical Values", "Replace Numeric Values", "Drop Columns" , "Drop Categorical Rows", "Drop Numeric Rows","Rename Columns","Handling Missing Data","Join Tables"])
             if "Replace Categorical Values" in options:
                 filter_column_selection = st.selectbox("Please Select or Enter a column Name: ", options=str_category)
                 selection = get_non_nulls(st.session_state.df[filter_column_selection].unique())
@@ -253,7 +250,6 @@ try:
                         options=selection_range,
                         value=(min(selection_range), max(selection_range))
                     )
-
                     if option == "Delete data inside the range":
                         st.write(f'We will be removing all the values between {int(start_value)} and {int(end_value)}')
                         num_filtered_data = num_filter_data(st.session_state.df, start_value, end_value, num_filter_column_selection, param=option)
@@ -265,7 +261,7 @@ try:
 
                     if st.button('Apply Changes'):
                         st.session_state.df = num_filtered_data
-                        st.experimental_rerun()
+                        st.rerun()
 
                 except ValueError as ve:
                     st.error(f"ValueError: {ve}")
@@ -281,14 +277,9 @@ try:
                 rename_text_data = st.text_input("Enter the New Name for the {} column".format(rename_column_selector), max_chars=50)
 
 
-                # if st.button("Draft Changes", help="when you want to rename multiple columns/single column  so first you have to click Save Draft button this updates the data and then press Rename Columns Button."):
-                #     st.session_state.rename_dict[rename_column_selector] = rename_text_data
-                # st.code(st.session_state.rename_dict)
-
                 if st.button("Apply Changes", help="Takes your data and rename the column as your wish."):
                     st.session_state.rename_dict[rename_column_selector] = rename_text_data
                     st.session_state.df = rename_columns(st.session_state.df, st.session_state.rename_dict)
-                    #st.write(st.session_state.df)
                     st.session_state.rename_dict = {}
                     st.rerun()
             
@@ -304,7 +295,7 @@ try:
                             droped_null_value = handling_missing_values(data=st.session_state.df, option_type=drop_null_values_option, col_names=selcted_columns)
                         else:
                             droped_null_value = handling_missing_values(st.session_state.df, drop_null_values_option)
-                        st.code(droped_null_value.isnull().sum())
+                        #st.code(droped_null_value.isnull().sum())
                         st.write(droped_null_value)      
                         if st.button("Apply Changes"):
                             st.session_state.df = droped_null_value
@@ -338,7 +329,7 @@ try:
                         if st.button("Apply Changes", help="Takes your data and Fill NaN Values for columns as your wish."):
                             st.session_state.df = filled_values   
                             st.rerun()    
-            elif "Join Tabels" in options:
+            elif "Join Tables" in options:
                 data_wrangling_merging_uploaded_file = st.file_uploader("Upload Your Second file you want to merge", type=file_format_type)
 
                 if data_wrangling_merging_uploaded_file is not None:
@@ -347,7 +338,7 @@ try:
                     same_columns = match_elements(data, second_data)
                     merge_key_selector = st.selectbox("Select A Comlumn by which you want to merge on two Dataset", options=same_columns)
                     
-                    merge_data = data_wrangling(data, second_data, merge_key_selector, options)
+                    merge_data = merge(data, second_data, merge_key_selector)
                     st.write(merge_data)
                     if st.button("Apply Changes"):
                         st.session_state.df = merge_data
@@ -363,14 +354,21 @@ try:
 
         if "Group By" in menu:
 
-            group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=st.session_state.df.columns)
+            group_by_columns = st.multiselect("Select Column/s on Which You Want to Group By", options=str_category)
+            all_col = str_category + num_category
             if group_by_columns != []:
                 group_type = st.selectbox("Choose what you want to do with returned data", options=['mean','median','count','max','min','standard deviation','1st quartile','3rd quartile','normal'])
                 if group_type != '':
                     if group_type != 'normal':
-                        cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
-                        grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
-                        st.dataframe(grouped_data)
+                        if group_type == 'count':
+                            grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=all_col)
+                            grouped_data = pd.DataFrame(grouped_data)
+                            grouped_data.columns = [*grouped_data.columns[:-1], 'count']
+                            st.dataframe(grouped_data)
+                        else:
+                            cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
+                            grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
+                            st.dataframe(grouped_data)
                         # download_data(grouped_data, label=" Grouped")
                     else:
                         grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type)        
@@ -381,7 +379,12 @@ try:
         if "Execute Custom Queries" in menu:
             st.header("Custom Queries")
             query_type = st.selectbox("Query Type",['Pure Python','SQL'])
-            query = st.text_input("Type Your Query Here", help='ex : Age < 35')
+            query = st.text_input("Type Your Query Here", 
+                                  help='''
+                                  
+                                  ex : Age < 35 for boolean expressions.
+                                  
+                                  for SQL use the name 'data' as the table name, ex: SELECT * FROM data''')
             if query != '':
                 result = get_query(data=st.session_state.df,query=query,query_type=query_type)
                 st.subheader("Query Result")

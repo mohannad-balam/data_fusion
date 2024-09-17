@@ -257,11 +257,11 @@ def filter_data(data, selected_column, selected_name):
 def num_filter_data(data, start_value, end_value, column, param):
     if param == "Delete data inside the range":
         if column in num_category:
-            num_filtered_data = data[~data[column].isin(range(int(start_value), int(end_value)+1))]
+            num_filtered_data = data[~((data[column] >= float(start_value)) & (data[column] <= float(end_value)))]
     else:
         if column in num_category:
             num_filtered_data = data[data[column].isin(range(int(start_value), int(end_value)+1))]
-    
+
     return num_filtered_data.reset_index(drop=True)
 
 
@@ -273,28 +273,28 @@ def plot_Chart(selection):
     all_category = num_category + str_category
     try:
         if selection == 'Line Chart':
-            st.subheader("All Catgeories")
+            st.subheader("All Columns")
             column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
-            st.subheader("All Categories")
-            column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
-            all_category.append('none')
-            color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
+            st.subheader("Numeric Columns")
+            column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", num_category)
+            str_category.append('none')
+            color = st.selectbox("input a categorical column to group by",str_category,index=str_category.index('none'))
             st.markdown("#### Line Chart for {} and {} columns Gouped By {}".format(column1,column2,color))
             if color != 'none':
                 line = px.line(data_frame=st.session_state.df, x=column1, y=column2,color=color) 
             else:
                 line = px.line(data_frame=st.session_state.df, x=column1, y=column2) 
             st.plotly_chart(line)
-            all_category.remove('none')
+            str_category.remove('none')
         elif selection == 'Bar Chart':
             num_category.append('count')
-            st.subheader("Categories")
+            st.subheader("Categorical Columns")     
             column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", str_category)
-            st.subheader("Numeric")
+            st.subheader("Numeric Columns")
             column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", num_category)
+            str_category.append('none')
             if column2 == 'count':
-                all_category.append('none')
-                color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
+                color = st.selectbox("input a categorical column to group by",str_category,index=str_category.index('none'))
                 st.markdown("#### Bar Chart for {} and {} columns Colored With {}".format(column1,column2,color))
                 if color != 'none':  
                     histo = px.histogram(data_frame=st.session_state.df,x=column1,color=color)
@@ -302,9 +302,7 @@ def plot_Chart(selection):
                     histo = px.histogram(data_frame=st.session_state.df,x=column1)    
                 st.plotly_chart(histo)
             else:
-                str_category.append('none')
-                index = str_category.index('none')
-                hue = st.selectbox("input the 3rd column", str_category, index=index)
+                hue = st.selectbox("input a categorical column to group by", str_category, index=str_category.index('none'))
                 if hue != 'none':
                     st.markdown("#### Bar chart for {} and {} column, grouped by {}".format(column1,column2,hue))
                     bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, color=hue, barmode='overlay', orientation='v',opacity=1,facet_col=hue)
@@ -313,52 +311,46 @@ def plot_Chart(selection):
                     st.markdown("#### Bar chart for {} and {} columns".format(column1,column2))
                     bar = px.bar(data_frame=st.session_state.df, x=column1, y=column2, barmode='overlay', orientation='v',opacity=1)
                     st.plotly_chart(bar)
-                str_category.remove('none')
-            all_category.remove('none')    
+            str_category.remove('none')    
             num_category.remove('count')
         elif selection == 'Scatter Chart':
-            st.subheader("All Values")
-            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
-            st.subheader("All Values")
-            column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", all_category)
-            all_category.append('none')
-            color = st.selectbox("Choose Color",all_category,index=all_category.index('none'))
+            st.subheader("Numerical Columns")
+            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", num_category)
+            st.subheader("Numerical Columns")
+            column2 = st.selectbox("Enter Name or Select the 2nd Column which you Want To Plot: ", num_category)
+            str_category.append('none')
+            color = st.selectbox("input a categorical column to group by",str_category,index=str_category.index('none'))
             if color == 'none' :
-                st.markdown("#### Satter Chart for {} and {} columns".format(column1,column2))
+                st.markdown("#### Scatter Chart for {} and {} columns".format(column1,column2))
                 scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2)
             else :
-                st.markdown("#### Satter Chart for {} and {} columns grouped by {}".format(column1,column2,color))
+                st.markdown("#### Scatter Chart for {} and {} columns grouped by {}".format(column1,column2,color))
                 scatter = px.scatter(data_frame=st.session_state.df, x=column1, y=column2, color=color)  
             st.plotly_chart(scatter)
-            all_category.remove('none')
+            str_category.remove('none')
         elif selection == 'Histogram':
-            st.subheader("All Values")
-            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
+            st.subheader("Numerical Columns")
+            column1 = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", num_category)
             str_category.append('none')
-            color = st.selectbox("Choose Color",str_category,index=str_category.index('none'))
+            color = st.selectbox("input a categorical column to group by",str_category,index=str_category.index('none'))
             if color == 'none':
-                st.markdown("#### Hist Plot for {} column".format(column1))
+                st.markdown("#### Histogram for {} column".format(column1))
                 histo = px.histogram(data_frame=st.session_state.df,x=column1)
             else:
-                st.markdown("#### Hist Plot for {} column grouped by {}".format(column1,color))
+                st.markdown("#### Histogram for {} column grouped by {}".format(column1,color))
                 histo = px.histogram(data_frame=st.session_state.df,x=column1,color=color)
             st.plotly_chart(histo)
             str_category.remove('none')      
         elif selection == 'Pie Chart':
-            #all_category.append('count')
-            val = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", all_category)
-            d = st.session_state.df[val].value_counts().reset_index()
-            d.columns = [val,'count']
-            #value = st.selectbox("Enter Names: ", all_category)
+            val = st.selectbox("Enter Name or Select the Column which you Want To Plot: ", str_category)
+            data_count = st.session_state.df[val].value_counts().reset_index()
+            data_count.columns = [val,'count']
             st.markdown("#### Pie Chart for {} column".format(val))
-            #if value == 'count':
-            pie_chart = px.pie(d,values='count', names=val)
-            # else:
-            #     pie_chart = px.pie(st.session_state.df,values=val, names=value)
+            pie_chart = px.pie(data_count,values='count', names=val)
             st.plotly_chart(pie_chart)
-            #all_category.remove('count')
         elif selection == 'heatmap':
             corr_type = st.selectbox('choose the correlation type', options= ['pearson', 'spearman', 'kendall'])
+            st.markdown("#### The {} correlation between variables".format(corr_type))
             heat_map = px.imshow(st.session_state.df.corr(method=corr_type))
             st.plotly_chart(heat_map)
     except Exception as e:
@@ -387,15 +379,9 @@ def fill_missing_data(data:pd.DataFrame, option_type, col_name=None, to_rep=None
         filled[col_name] = data[col_name].fillna(data[col_name].mean())    
     return filled
 
-def data_wrangling(data1, data2=None, key=None, usertype=None):
-    if usertype == "Join Tabels":
-        data = pd.merge(data1, data2, on=key, suffixes=("_extra", "_extra0"))
-        data = data[data.columns.drop(list(data.filter(regex='_extra')))]
-        return data
-    
-    elif usertype == "Concatenating On Axis":
-        data = pd.concat([data1, data2], ignore_index=True)
-         
+def merge(data1, data2=None, key=None):
+    data = pd.merge(data1, data2, on=key, suffixes=("_extra", "_extra0"))
+    data = data[data.columns.drop(list(data.filter(regex='_extra')))]
     return data
 
 def group_data(data:pd.DataFrame, col_names, group_type, col_name=None):
@@ -405,13 +391,13 @@ def group_data(data:pd.DataFrame, col_names, group_type, col_name=None):
     elif group_type == "median":
         grouped = data.groupby([col for col in col_names])[[col for col in col_name]].median().round(2)
     elif group_type == 'count':
-        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].count()
+        grouped = data.groupby([col for col in col_names])[col_name[0]].count()
     elif group_type == 'max':
         grouped = data.groupby([col for col in col_names])[[col for col in col_name]].max()
     elif group_type == 'min':
         grouped = data.groupby([col for col in col_names])[[col for col in col_name]].min()
     elif group_type == 'standard deviation':
-        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].std()
+        grouped = data.groupby([col for col in col_names])[[col for col in col_name]].std().round(2)
     elif group_type == '1st quartile':
         grouped = data.groupby([col for col in col_names])[[col for col in col_name]].quantile(0.25)
     elif group_type == '3rd qurtile':
