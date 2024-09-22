@@ -1,10 +1,7 @@
 import streamlit as st
 from helper import data, seconddata, match_elements, describe, see_outliers, drop_columns, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, merge, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique,plot_Chart
-import plotly.express as px
 import pandas as pd
-import seaborn as sns
-import time
-from streamlit_option_menu import option_menu 
+from streamlit_option_menu import option_menu
 
 try:
     
@@ -14,7 +11,7 @@ try:
         layout="wide",
         initial_sidebar_state="expanded",
         menu_items={
-            'Get Help': 'https://github.com/mohannad-balam',
+            'Get Help': 'https://github.com/',
         }
     )
 
@@ -29,12 +26,11 @@ try:
         st.header("Welcome to DataFusion")
         st.subheader("Upload a Dataset To Start Exploring")
     if uploaded_file is not None:
-        
-        #start_time = time.time()
+
         file_type = uploaded_file.type.split("/")[1]
         
         if file_type == "plain":
-            seperator = st.sidebar.text_input("Please Enter what seperates your data: ", max_chars=5) 
+            seperator = st.sidebar.text_input("Please Enter what seperates your data: ", max_chars=1) 
             data = data(uploaded_file, file_type,seperator)
             
         elif file_type in excel_type:
@@ -43,7 +39,6 @@ try:
             data = data(uploaded_file, file_type)
             
         #end_time = time.time() - start_time   
-        
         if 'df' not in st.session_state:
             st.session_state.df = data.copy(deep=True)
 
@@ -56,7 +51,7 @@ try:
             default_index=0,
         )
 
-        correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category,column_with_null_values,most_repeated = describe(st.session_state.df)
+        correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, unique, str_category, column_with_null_values, most_repeated = describe(st.session_state.df)
                 
         with st.expander("Original Dataset"):
 
@@ -69,9 +64,6 @@ try:
                 st.rerun()
             st.subheader("Edited Dataset Preview")        
             st.dataframe(st.session_state.df)    
-            st.text(" ")
-            st.text(" ")
-            st.text(" ")
 
     # ==================================================================================================
         if "Overview" in menu:
@@ -81,7 +73,7 @@ try:
                 st.markdown('Unique Values For Each Column')
                 get_unique(st.session_state.df) 
 
-            correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, dtypes, unique, str_category, column_with_null_values,most_repeated = describe(st.session_state.df)
+            #correlation, num_describe, category_describe , shape, columns, num_category, str_category, null_values, unique, str_category, column_with_null_values,most_repeated = describe(st.session_state.df)
             if not num_describe is None and not category_describe is None:
                 cl1, cl2 = st.columns(2)
                 with cl1:
@@ -93,10 +85,10 @@ try:
             
             elif num_describe is None:
                 st.markdown("Categorical Data Description : ")
-                st.write(category_describe)
+                st.dataframe(category_describe)
             elif category_describe is None:
                 st.markdown("Numeric Data Description")
-                st.write(num_describe)
+                st.dataframe(num_describe)
             st.text(" ")
             st.text(" ")
             st.text(" ")
@@ -127,10 +119,6 @@ try:
                 st.dataframe(str_category, hide_index=False)
     
             col5, col6, col7= st.columns(3)
-
-            # with col6:
-            #     st.text("Columns Data-Type")
-            #     st.dataframe(dtypes)
             
             with col6:
                 st.text("Counted Unique Values")
@@ -220,7 +208,7 @@ try:
 
                     if st.button('Apply Changes'):
                         st.session_state.df = filtered_data
-                        st.experimental_rerun()
+                        st.rerun()
 
                 except ValueError as ve:
                     st.error(f"ValueError: {ve}")
@@ -363,17 +351,15 @@ try:
                         if group_type == 'count':
                             grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=all_col)
                             grouped_data = pd.DataFrame(grouped_data)
-                            grouped_data.columns = [*grouped_data.columns[:-1], 'count']
+                            grouped_data.rename(columns={grouped_data.columns[-1]: 'count'}, inplace=True)
                             st.dataframe(grouped_data)
                         else:
                             cols = st.multiselect("Choose the Columns you want the {} for".format(group_type), options=num_category)
                             grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type,col_name=cols)
                             st.dataframe(grouped_data)
-                        # download_data(grouped_data, label=" Grouped")
                     else:
                         grouped_data = group_data(data=st.session_state.df, col_names=group_by_columns, group_type=group_type)        
                         st.dataframe(grouped_data)
-                        download_data(grouped_data, label=" Grouped")
 
      # ==========================================================================================================================================   
         if "Execute Custom Queries" in menu:
@@ -399,4 +385,4 @@ try:
     #st.code("Processed time is : " + str(end_time.__round__(2)) + " seconds")
     
 except Exception as e:
-    st.warning(e)
+    st.markdown("### check if you have inputted something wrong")

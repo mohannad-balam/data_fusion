@@ -1,24 +1,20 @@
 import pandas as pd
 import streamlit as st
-import datetime, pytz
-import glob, os
+import datetime
 import numpy as np
 import plotly.express as px
-import matplotlib.pyplot as plt
-import seaborn as sns
 from pandasql import sqldf
-import plotly.express as px
 
 excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
-@st.cache_data()
+
 def data(file_path, file_type, separator=None):
     try:
         if file_type == "csv":
-            data = pd.read_csv(file_path, parse_dates=True)
+            data = pd.read_csv(file_path)
         elif file_type == "json":
             data = pd.read_json(file_path)
         elif file_type in excel_type:  
-            data = pd.read_excel(file_path, parse_dates=True)
+            data = pd.read_excel(file_path)
         elif file_type == "plain":
             try:
                 data = pd.read_table(file_path, sep=separator)
@@ -29,13 +25,13 @@ def data(file_path, file_type, separator=None):
         return None
 
     # Check for unnamed index column
-    if 0 in data.columns or 'Unnamed: 0' in data.columns:
-        data.set_index(data.columns[0], inplace=True)
+    # if 0 in data.columns or 'Unnamed: 0' in data.columns:
+    #     data.set_index(data.columns[0], inplace=True)
 
     return data
   
 
-@st.cache_data()
+
 def seconddata(file_path, file_type, separator=None):
     try:
         if file_type == "csv":
@@ -54,8 +50,8 @@ def seconddata(file_path, file_type, separator=None):
         return None
 
     # Check for unnamed index column
-    if 0 in data.columns or 'Unnamed: 0' in data.columns:
-        data.set_index(data.columns[0], inplace=True)
+    # if 0 in data.columns or 'Unnamed: 0' in data.columns:
+    #     data.set_index(data.columns[0], inplace=True)
 
     return data
 
@@ -87,7 +83,7 @@ def download_data(data:pd.DataFrame, label):
     timestamp = current_time.strftime("%Y-%m-%d_%H-%M-%S")
     
     # Convert DataFrame to CSV and encode it
-    csv_data = data.to_csv(encoding='utf-8-sig', index=False).encode('utf-8-sig') #why use encode twice?
+    csv_data = data.to_csv(index=False).encode('utf-8-sig')
     
     # Create and return the download button
     export_data = st.download_button(
@@ -125,6 +121,7 @@ def describe(data):
         raise ValueError("The data parameter must be a pandas DataFrame.")
     
     global num_category, str_category
+    
     # Select numeric and categorical data
     numeric_data = data.select_dtypes(include=[np.number])
     categorical_data = data.select_dtypes(exclude=[np.number])
@@ -152,7 +149,6 @@ def describe(data):
         num_category, 
         str_category, 
         data.isnull().sum(), 
-        data.dtypes.astype("str"), 
         data.nunique(), 
         str_category, 
         column_with_null_values,
@@ -172,7 +168,7 @@ def see_outliers(data, num_category_outliers):
     except Exception as e:
         st.error(f"An error occurred while visualizing outliers: {e}")
 
-def delete_outliers(data, col_name): 
+def delete_outliers(data:pd.DataFrame, col_name): 
     try:
         if col_name not in data.columns:
             raise ValueError(f"Column '{col_name}' not found in data.")
@@ -190,7 +186,7 @@ def delete_outliers(data, col_name):
 
         # Filter out the outliers
         no_outliers = data[(data[col_name] >= lower_bound) & (data[col_name] <= upper_bound)]
-
+        data.reset_index()
         return no_outliers.reset_index(drop=True)
     
     except Exception as e:
@@ -233,7 +229,7 @@ def replace_numeric(data:pd.DataFrame, selected_column, to_replace, val):
         else:
             replaced[selected_column] = data[selected_column].replace(to_replace=to_replace, value=val)
         
-        replaced[selected_column] = pd.to_numeric(replaced[selected_column], errors='ignore') #why?
+        #replaced[selected_column] = pd.to_numeric(replaced[selected_column], errors='ignore') #why?
         
         return replaced
     
@@ -241,7 +237,7 @@ def replace_numeric(data:pd.DataFrame, selected_column, to_replace, val):
         st.error(f"An error occurred while replacing values: {e}")
         return data  
 
-def drop_columns(data, selected_name):
+def drop_columns(data:pd.DataFrame, selected_name):
     droped =  data.drop(selected_name, axis = 1)
     return droped
 
@@ -368,7 +364,10 @@ def handling_missing_values(data:pd.DataFrame, option_type, col_names=None):
 def fill_missing_data(data:pd.DataFrame, option_type, col_name=None, to_rep=None):
     filled = data.copy(deep=True)
     if option_type == 'Custom Fill':
-        filled[col_name] = data[col_name].fillna(to_rep)
+        try:
+            filled[col_name] = data[col_name].fillna(to_rep)
+        except ValueError:
+            st.dialog("s")
     elif option_type == 'Backward Fill':
         filled[col_name] = data[col_name].fillna(method='bfill')
     elif option_type == 'Forward Fill':
@@ -380,8 +379,7 @@ def fill_missing_data(data:pd.DataFrame, option_type, col_name=None, to_rep=None
     return filled
 
 def merge(data1, data2=None, key=None):
-    data = pd.merge(data1, data2, on=key, suffixes=("_extra", "_extra0"))
-    data = data[data.columns.drop(list(data.filter(regex='_extra')))]
+    data = pd.merge(data1, data2, on=key)
     return data
 
 def group_data(data:pd.DataFrame, col_names, group_type, col_name=None):
@@ -405,17 +403,12 @@ def group_data(data:pd.DataFrame, col_names, group_type, col_name=None):
     elif group_type == 'normal':
         grouped = data.groupby([col for col in col_names])
         normal_grouping = pd.DataFrame()
-        for creteria, rows in grouped:
+        for _, rows in grouped:
             if normal_grouping.empty:
                 normal_grouping = pd.DataFrame(data=rows)
             normal_grouping = pd.concat([normal_grouping,rows])
         return normal_grouping.reset_index()
     return grouped
-
-def clear_image_cache():
-    removing_files = glob.glob('temp/*.png')
-    for i in removing_files:
-        os.remove(i)   
     
 
 def get_non_nulls(data):
@@ -429,13 +422,4 @@ def get_query(data:pd.DataFrame,query,query_type):
         res =  qr.query(query).reset_index(drop=True)
     elif query_type == 'SQL':
         res =  sqldf(query=query, env=locals())
-    return res
-
-def sql_query(data:pd.DataFrame,query):
-    qr = data.copy(deep=True)
-    return sqldf(query=query, env=locals())
-
-def python_query(data:pd.DataFrame,query):
-    qr = data.copy(deep=True)
-    res = qr.query(query).reset_index(drop=True)
     return res
