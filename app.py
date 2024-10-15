@@ -11,7 +11,7 @@ try:
         layout="wide",
         initial_sidebar_state="expanded",
         menu_items={
-            'Get Help': 'https://github.com/',
+            'Get Help': 'https://github.com/mohannad-balam',
         }
     )
 

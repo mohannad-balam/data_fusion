@@ -157,9 +157,9 @@ def describe(data):
 
 def see_outliers(data, num_category_outliers):
     try:
-        if num_category_outliers not in data.columns:
-            st.error(f"Column '{num_category_outliers}' not found in data.")
-            return
+        # if num_category_outliers not in data.columns:
+        #     st.error(f"Column '{num_category_outliers}' not found in data.")
+        #     return
         
         # Plotting with Plotly
         box_plot = px.box(data_frame=data, x=num_category_outliers)
