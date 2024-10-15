@@ -12,7 +12,7 @@ try:
         initial_sidebar_state="expanded",
         menu_items={
             'Get Help': 'https://github.com/mohannad-balam',
-            'Feedback': 'https://forms.gle/bJYQZrbywzFs4oSy8',
+            'About': 'give us your feedback: https://forms.gle/bJYQZrbywzFs4oSy8'
         }
     )
 
