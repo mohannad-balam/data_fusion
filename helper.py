@@ -158,7 +158,7 @@ def describe(data):
 def see_outliers(data, num_category_outliers):
     try:
         if num_category_outliers not in data.columns:
-            st.markdown(f"####Column '{num_category_outliers}' not found in data.")
+            st.markdown("#### Columns are empty or your dataset may not contain numeric columns.")
             return
         
         # Plotting with Plotly
