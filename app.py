@@ -24,7 +24,7 @@ try:
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
     with st.sidebar:
         if st.button('Prvoide a Feedback'):
-            webbrowser.open_new_tab("https://forms.gle/bJYQZrbywzFs4oSy8")
+            webbrowser.open_new_tab("http://forms.gle/bJYQZrbywzFs4oSy8")
     
     if uploaded_file is None : 
         st.header("Welcome to DataFusion")
