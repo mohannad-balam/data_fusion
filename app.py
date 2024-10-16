@@ -2,6 +2,7 @@ import streamlit as st
 from helper import data, seconddata, match_elements, describe, see_outliers, drop_columns, download_data, filter_data, num_filter_data, rename_columns, handling_missing_values, merge, replace_categorical, replace_numeric, get_non_nulls, fill_missing_data, group_data, delete_outliers, get_query,get_unique,plot_Chart
 import pandas as pd
 from streamlit_option_menu import option_menu
+import webbrowser
 
 try:
     
@@ -12,7 +13,6 @@ try:
         initial_sidebar_state="expanded",
         menu_items={
             'Get Help': 'https://github.com/mohannad-balam',
-            'About': 'give us your feedback: https://forms.gle/bJYQZrbywzFs4oSy8'
         }
     )
 
@@ -22,6 +22,9 @@ try:
     excel_type =["vnd.ms-excel","vnd.openxmlformats-officedocument.spreadsheetml.sheet", "vnd.oasis.opendocument.spreadsheet", "vnd.oasis.opendocument.text"]
 
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
+    with st.sidebar:
+        if st.button('Prvoide a Feedback'):
+            webbrowser.open_new_tab("https://forms.gle/bJYQZrbywzFs4oSy8")
     
     if uploaded_file is None : 
         st.header("Welcome to DataFusion")
@@ -130,7 +133,7 @@ try:
                 st.dataframe(null_values)
             
             with col7:
-                st.write("Most Frequent Values")
+                st.write("Most Frequent Numeric Values")
                 st.dataframe(most_repeated)
             
             st.write("Correlation")
