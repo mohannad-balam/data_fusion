@@ -23,8 +23,16 @@ try:
 
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
     with st.sidebar:
-        if st.button('Prvoide a Feedback'):
-            webbrowser.open_new_tab("http://forms.gle/bJYQZrbywzFs4oSy8")
+        st.markdown(
+            """
+            <a href="http://forms.gle/bJYQZrbywzFs4oSy8" target="_blank">
+                <button style="background-color:#fc5c5c; color:white; padding:10px; border-radius:5px; border:none;">
+                    Provide Feedback
+                </button>
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
     
     if uploaded_file is None : 
         st.header("Welcome to DataFusion")
