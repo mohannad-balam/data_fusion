@@ -24,15 +24,37 @@ try:
     uploaded_file = st.sidebar.file_uploader("Upload Your file", type=file_format_type)
     with st.sidebar:
         st.markdown(
-            """
-            <a href="http://forms.gle/bJYQZrbywzFs4oSy8" target="_blank">
-                <button style="background-color:#fc5c5c; color:white; padding:10px; border-radius:5px; border:none;">
-                    Provide Feedback
-                </button>
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
+    """
+    <style>
+    .button {
+        background-color: #FFFFFF;
+        color: black;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        transition-duration: 0.4s;
+        border: none;
+        cursor: pointer;
+    }
+    
+
+    .button:hover {
+        background-color: #fc5c5c;
+        color: white;
+    }
+    </style>
+
+    <a href="http://forms.gle/bJYQZrbywzFs4oSy8" target="_blank">
+        <button class="button">
+          📝 Provide Feedback
+        </button>
+    </a>
+    """,
+    unsafe_allow_html=True
+)
     
     if uploaded_file is None : 
         st.header("Welcome to DataFusion")
